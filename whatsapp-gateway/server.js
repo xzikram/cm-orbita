@@ -176,6 +176,9 @@ app.post('/send-message', async (req, res) => {
     } catch (error) {
         console.error('Gagal mengirim pesan:', error);
         res.status(500).json({ error: error.message });
+        if (error.message && (error.message.includes('Protocol error') || error.message.includes('Session closed') || error.message.includes('detached') || error.message.includes('context was destroyed') || error.message.includes('Target closed'))) {
+            handleDisconnect('Error during sendMessage: ' + error.message);
+        }
     }
 });
 
@@ -221,6 +224,9 @@ app.post('/send-document', async (req, res) => {
     } catch (error) {
         console.error('Gagal mengirim dokumen:', error);
         res.status(500).json({ error: error.message });
+        if (error.message && (error.message.includes('Protocol error') || error.message.includes('Session closed') || error.message.includes('detached') || error.message.includes('context was destroyed') || error.message.includes('Target closed'))) {
+            handleDisconnect('Error during sendDocument: ' + error.message);
+        }
     }
 });
 
