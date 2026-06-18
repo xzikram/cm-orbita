@@ -75,6 +75,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('email-templates/delete-all', [\App\Modules\Communication\Controllers\EmailTemplateController::class, 'deleteAll'])->name('email-templates.deleteAll');
         Route::resource('email-templates', \App\Modules\Communication\Controllers\EmailTemplateController::class);
         
+        Route::resource('whatsapp-templates', \App\Modules\Communication\Controllers\WhatsAppTemplateController::class);
+        
         Route::post('document-types/delete-all', [\App\Modules\Communication\Controllers\DocumentTypeController::class, 'deleteAll'])->name('document-types.deleteAll');
         Route::resource('document-types', \App\Modules\Communication\Controllers\DocumentTypeController::class);
         

@@ -5,12 +5,17 @@ namespace Database\Seeders;
 use App\Models\FollowUpStatus;
 use App\Models\LensCondition;
 use App\Models\ReminderTemplate;
+use App\Models\DocumentType;
+use App\Models\EmailTemplate;
+use App\Models\Clinic;
 use Illuminate\Database\Seeder;
 
 class MasterDataSeeder extends Seeder
 {
     public function run(): void
     {
+        $clinicId = Clinic::first()?->id;
+
         // ── Follow-Up Statuses ──
         $statuses = [
             ['name' => 'Hadir', 'slug' => 'hadir', 'color' => '#10B981', 'icon' => 'check-circle', 'sort_order' => 1],
@@ -37,6 +42,7 @@ class MasterDataSeeder extends Seeder
 
         // ── Reminder Templates ──
         ReminderTemplate::create([
+            'clinic_id' => $clinicId,
             'name' => 'Reminder Kontrol Pasien',
             'type' => 'follow_up',
             'channel' => 'whatsapp',
@@ -47,6 +53,7 @@ class MasterDataSeeder extends Seeder
         ]);
 
         ReminderTemplate::create([
+            'clinic_id' => $clinicId,
             'name' => 'Reminder Kontrol untuk Dokter',
             'type' => 'follow_up',
             'channel' => 'whatsapp',
@@ -57,6 +64,7 @@ class MasterDataSeeder extends Seeder
         ]);
 
         ReminderTemplate::create([
+            'clinic_id' => $clinicId,
             'name' => 'Reminder Pasien Tidak Hadir',
             'type' => 'follow_up',
             'channel' => 'whatsapp',
@@ -65,5 +73,49 @@ class MasterDataSeeder extends Seeder
             'is_default' => false,
             'is_active' => true,
         ]);
+
+        // ── Document Types ──
+        $documentTypes = [
+            ['code' => 'medical_resume', 'name' => 'Resume Medis', 'clinic_id' => $clinicId],
+            ['code' => 'prescription', 'name' => 'Resep Kacamata / Lensa', 'clinic_id' => $clinicId],
+            ['code' => 'follow_up_letter', 'name' => 'Surat Rencana Kontrol', 'clinic_id' => $clinicId],
+            ['code' => 'referral_letter', 'name' => 'Surat Rujukan', 'clinic_id' => $clinicId],
+        ];
+
+        foreach ($documentTypes as $docType) {
+            DocumentType::updateOrCreate(['code' => $docType['code']], $docType);
+        }
+
+        // ── Email Templates ──
+        $emailTemplates = [
+            [
+                'code' => 'medical_resume_delivery',
+                'name' => 'Pengiriman Resume Medis',
+                'subject_template' => 'Resume Medis Pasien: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Resume Medis</strong> hasil pemeriksaan Anda di {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
+            [
+                'code' => 'prescription_delivery',
+                'name' => 'Pengiriman Resep Kacamata',
+                'subject_template' => 'Resep Kacamata Pasien: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Resep Kacamata/Lensa Kontak</strong> Anda dari {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
+            [
+                'code' => 'follow_up_letter_delivery',
+                'name' => 'Pengiriman Rencana Kontrol',
+                'subject_template' => 'Surat Rencana Kontrol: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Rencana Kontrol Rutin</strong> Anda di {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ]
+        ];
+
+        foreach ($emailTemplates as $template) {
+            EmailTemplate::updateOrCreate(['code' => $template['code']], $template);
+        }
     }
 }

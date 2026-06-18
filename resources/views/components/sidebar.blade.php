@@ -198,6 +198,19 @@
                         </a>
                     </li>
                     
+                    @php $active = request()->routeIs('communication.whatsapp-templates.*'); @endphp
+                    <li>
+                        <a href="{{ route('communication.whatsapp-templates.index') }}" class="group relative flex items-center gap-x-3 rounded-lg px-3 py-2 text-[13px] leading-6 font-medium transition-all duration-150 {{ $active ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50' }}">
+                            @if($active)
+                            <span class="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-md bg-emerald-600"></span>
+                            @endif
+                            <svg class="h-5 w-5 shrink-0 {{ $active ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600' }} transition-colors" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.255-3.653a1.122 1.122 0 01.865-.502c1.153-.086 2.294-.213 3.423-.379 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.269z" />
+                            </svg>
+                            WhatsApp Templates
+                        </a>
+                    </li>
+                    
                     @php $active = request()->routeIs('communication.document-types.*'); @endphp
                     <li>
                         <a href="{{ route('communication.document-types.index') }}" class="group relative flex items-center gap-x-3 rounded-lg px-3 py-2 text-[13px] leading-6 font-medium transition-all duration-150 {{ $active ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50' }}">
