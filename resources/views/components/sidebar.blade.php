@@ -1,4 +1,4 @@
-<div class="flex grow flex-col gap-y-4 overflow-y-auto bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl px-5 pb-4 border-r border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-900/[0.03]">
+<div class="sidebar-scroll-container flex grow flex-col gap-y-4 overflow-y-auto bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl px-5 pb-4 border-r border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-900/[0.03]">
     <!-- Corporate Header/Logo Section -->
     <div class="flex h-20 shrink-0 items-center px-2 mb-1">
         <div class="flex items-center gap-x-3.5">
@@ -379,3 +379,54 @@
         </ul>
     </nav>
 </div>
+
+<script>
+    (function() {
+        if (window.sidebarScrollInitialized) return;
+        window.sidebarScrollInitialized = true;
+
+        const initSidebarScroll = () => {
+            const scrollContainers = document.querySelectorAll('.sidebar-scroll-container');
+            const savedScrollPos = sessionStorage.getItem('sidebar-scroll-position');
+            
+            scrollContainers.forEach(container => {
+                if (savedScrollPos !== null) {
+                    container.scrollTop = parseInt(savedScrollPos, 10);
+                } else {
+                    // Fallback: scroll active item into view
+                    const activeSpan = container.querySelector('span.absolute.bg-gradient-to-b');
+                    const activeLink = activeSpan ? activeSpan.closest('a') : null;
+                    if (activeLink) {
+                        activeLink.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                    }
+                }
+                
+                // Save scroll position on scroll
+                let scrollTimeout;
+                container.addEventListener('scroll', () => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        if (container.offsetHeight > 0) {
+                            sessionStorage.setItem('sidebar-scroll-position', container.scrollTop);
+                        }
+                    }, 100);
+                });
+                
+                // Save scroll position on link click
+                container.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (container.offsetHeight > 0) {
+                            sessionStorage.setItem('sidebar-scroll-position', container.scrollTop);
+                        }
+                    });
+                });
+            });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSidebarScroll);
+        } else {
+            initSidebarScroll();
+        }
+    })();
+</script>
