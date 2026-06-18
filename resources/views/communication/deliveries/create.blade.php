@@ -1,0 +1,250 @@
+@extends('layouts.app')
+
+@section('title', 'Kirim Dokumen (Document Delivery)')
+
+@section('content')
+<div class="max-w-4xl mx-auto">
+    <div class="card p-6">
+        <h2 class="text-base font-semibold leading-7 text-slate-900 dark:text-white">Form Pengiriman Dokumen PDF</h2>
+        <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-400">Pilih pasien, jenis dokumen, dan unggah file PDF yang akan dikirim via email.</p>
+
+        <form action="{{ route('communication.deliveries.store') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-8">
+            @csrf
+            
+            <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
+                <!-- Select Patient -->
+                <div class="sm:col-span-2">
+                    <label for="patient_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Pasien</label>
+                    <div class="mt-2">
+                        <select id="patient_id" name="patient_id" required class="input-field">
+                            <option value="">-- Cari dan Pilih Pasien --</option>
+                            @foreach($patients as $patient)
+                                <option value="{{ $patient->id }}" data-email="{{ $patient->email }}" data-phone="{{ $patient->phone }}" data-dob="{{ $patient->date_of_birth ? $patient->date_of_birth->format('d-m-Y') : '' }}" {{ (old('patient_id') == $patient->id || (isset($selectedPatient) && $selectedPatient->id == $patient->id)) ? 'selected' : '' }}>
+                                    {{ $patient->name }} (RM: {{ $patient->medical_record_number }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @error('patient_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <!-- Select Channel (Metode Pengiriman) -->
+                <div class="sm:col-span-2">
+                    <label for="channel" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Metode Pengiriman</label>
+                    <div class="mt-2">
+                        <select id="channel" name="channel" required class="input-field">
+                            <option value="email" {{ old('channel', 'email') == 'email' ? 'selected' : '' }}>Email</option>
+                            <option value="whatsapp" {{ old('channel') == 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
+                        </select>
+                    </div>
+                    @error('channel')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <!-- Email Fields Group -->
+                <div id="email-fields-group" class="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2" style="display: none;">
+                    <!-- Recipient Email -->
+                    <div>
+                        <label for="recipient_email" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Email Tujuan</label>
+                        <div class="mt-2">
+                            <input type="email" name="recipient_email" id="recipient_email" value="{{ old('recipient_email', $selectedPatient->email ?? '') }}" class="input-field" placeholder="Otomatis terisi dari data pasien">
+                        </div>
+                        @error('recipient_email')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+
+                    <!-- Select SMTP Account -->
+                    <div>
+                        <label for="email_account_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Kirim Dari (SMTP Account)</label>
+                        <div class="mt-2">
+                            <select id="email_account_id" name="email_account_id" class="input-field">
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->id }}" {{ (old('email_account_id') == $account->id || $account->is_default) ? 'selected' : '' }}>
+                                        {{ $account->name }} ({{ $account->email_address }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @error('email_account_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <!-- WhatsApp Fields Group -->
+                <div id="whatsapp-fields-group" class="sm:col-span-2" style="display: none;">
+                    <div>
+                        <label for="recipient_phone" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">No. WhatsApp Tujuan</label>
+                        <div class="mt-2">
+                            <input type="text" name="recipient_phone" id="recipient_phone" value="{{ old('recipient_phone', $selectedPatient->phone ?? '') }}" class="input-field" placeholder="Otomatis terisi dari data pasien">
+                        </div>
+                        @error('recipient_phone')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <!-- Select Document Type -->
+                <div>
+                    <label for="document_type_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Jenis Dokumen</label>
+                    <div class="mt-2">
+                        <select id="document_type_id" name="document_type_id" required class="input-field">
+                            <option value="">-- Pilih Jenis Dokumen --</option>
+                            @foreach($documentTypes as $type)
+                                <option value="{{ $type->id }}" {{ old('document_type_id') == $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @error('document_type_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <!-- Select Template -->
+                <div>
+                    <label id="template-label" for="email_template_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Template Pesan</label>
+                    <div class="mt-2">
+                        <select id="email_template_id" name="email_template_id" required class="input-field">
+                            <option value="">-- Pilih Template Pesan --</option>
+                            @foreach($templates as $template)
+                                <option value="{{ $template->id }}" {{ old('email_template_id') == $template->id ? 'selected' : '' }}>{{ $template->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @error('email_template_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <!-- Password Protect PDF Checkbox -->
+                <div class="sm:col-span-2">
+                    <div class="relative flex items-start bg-slate-50 dark:bg-slate-800/30 p-4 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex h-6 items-center">
+                            <input id="password_protect" name="password_protect" type="checkbox" value="1" {{ old('password_protect', '1') == '1' ? 'checked' : '' }} class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600">
+                        </div>
+                        <div class="ml-3 text-sm leading-6">
+                            <label for="password_protect" class="font-medium text-slate-900 dark:text-white">Proteksi Berkas PDF dengan Password Tanggal Lahir Pasien</label>
+                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-1" id="password-help-text">Password untuk membuka file PDF adalah tanggal lahir pasien (Format: DDMMYYYY, contoh: 15051990).</p>
+                        </div>
+                    </div>
+                    @error('password_protect')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                
+                <!-- File Upload -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Upload Dokumen PDF</label>
+                    <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-slate-700 px-6 py-10 bg-slate-50 dark:bg-slate-800/50">
+                        <div class="text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
+                                <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
+                                    <span>Pilih file PDF</span>
+                                    <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf" required>
+                                </label>
+                                <p class="pl-1">atau tarik dan lepas ke sini</p>
+                            </div>
+                            <p class="text-xs leading-5 text-slate-500" id="file-name-display">PDF max 10MB</p>
+                        </div>
+                    </div>
+                    @error('document_pdf')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
+            <div class="mt-6 flex items-center justify-end gap-x-4 border-t border-gray-900/10 dark:border-slate-700 pt-6">
+                <a href="{{ route('communication.deliveries.index') }}" class="text-sm font-semibold leading-6 text-slate-900 dark:text-slate-300 hover:text-slate-500">Batal</a>
+                <button type="submit" class="btn-primary flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
+                    <span id="submit-button-text">Kirim Email Sekarang</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('document_pdf').addEventListener('change', function(e) {
+        if(e.target.files.length > 0) {
+            document.getElementById('file-name-display').innerText = 'File dipilih: ' + e.target.files[0].name;
+            document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
+        }
+    });
+
+    const patientSelect = document.getElementById('patient_id');
+    const channelSelect = document.getElementById('channel');
+    
+    // Groups/Fields
+    const emailFieldsGroup = document.getElementById('email-fields-group');
+    const whatsappFieldsGroup = document.getElementById('whatsapp-fields-group');
+    const templateLabel = document.getElementById('template-label');
+    
+    // Inputs
+    const recipientEmail = document.getElementById('recipient_email');
+    const recipientPhone = document.getElementById('recipient_phone');
+    const emailAccountId = document.getElementById('email_account_id');
+    const passwordProtect = document.getElementById('password_protect');
+    const passwordHelpText = document.getElementById('password-help-text');
+
+    function updatePatientDetails() {
+        const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+        if (!selectedOption || selectedOption.value === '') {
+            recipientEmail.value = '';
+            recipientPhone.value = '';
+            passwordProtect.disabled = false;
+            passwordHelpText.innerText = "Password untuk membuka file PDF adalah tanggal lahir pasien (Format: DDMMYYYY, contoh: 15051990).";
+            passwordHelpText.classList.remove('text-red-500');
+            passwordHelpText.classList.add('text-slate-500');
+            return;
+        }
+
+        const email = selectedOption.getAttribute('data-email') || '';
+        const phone = selectedOption.getAttribute('data-phone') || '';
+        const dob = selectedOption.getAttribute('data-dob') || '';
+
+        recipientEmail.value = email;
+        recipientPhone.value = phone;
+
+        if (dob) {
+            const rawDob = dob.replace(/-/g, ''); // Format: DDMMYYYY
+            passwordProtect.disabled = false;
+            passwordHelpText.innerText = `Password untuk pasien ini: ${rawDob} (berdasarkan tanggal lahir ${dob}).`;
+            passwordHelpText.classList.remove('text-red-500');
+            passwordHelpText.classList.add('text-slate-500');
+        } else {
+            passwordProtect.checked = false;
+            passwordProtect.disabled = true;
+            passwordHelpText.innerText = "Pasien tidak memiliki data tanggal lahir. Proteksi password tidak dapat diaktifkan.";
+            passwordHelpText.classList.remove('text-slate-500');
+            passwordHelpText.classList.add('text-red-500', 'font-medium');
+        }
+    }
+
+    function toggleDeliveryMethod() {
+        const channel = channelSelect.value;
+        const submitText = document.getElementById('submit-button-text');
+        if (channel === 'whatsapp') {
+            // Show WhatsApp fields, hide Email fields
+            emailFieldsGroup.style.display = 'none';
+            whatsappFieldsGroup.style.display = 'block';
+            templateLabel.innerText = 'WhatsApp Template';
+            submitText.innerText = 'Proses Dokumen & Kirim WA';
+            
+            // Adjust validation requirements
+            recipientEmail.required = false;
+            emailAccountId.required = false;
+            recipientPhone.required = true;
+        } else {
+            // Show Email fields, hide WhatsApp fields
+            emailFieldsGroup.style.display = 'grid';
+            whatsappFieldsGroup.style.display = 'none';
+            templateLabel.innerText = 'Email Template';
+            submitText.innerText = 'Kirim Email Sekarang';
+            
+            // Adjust validation requirements
+            recipientEmail.required = true;
+            emailAccountId.required = true;
+            recipientPhone.required = false;
+        }
+    }
+
+    patientSelect.addEventListener('change', updatePatientDetails);
+    channelSelect.addEventListener('change', toggleDeliveryMethod);
+    
+    // Initial run on page load
+    updatePatientDetails();
+    toggleDeliveryMethod();
+</script>
+@endsection

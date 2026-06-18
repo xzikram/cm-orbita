@@ -1,0 +1,151 @@
+@extends('layouts.app')
+
+@section('title', 'Detail Pasien')
+
+@section('content')
+<div class="space-y-6">
+    <!-- Header Patient -->
+    <div class="card p-6">
+        <div class="sm:flex sm:items-center sm:justify-between">
+            <div class="sm:flex sm:space-x-5">
+                <div class="flex-shrink-0">
+                    <div class="h-20 w-20 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-primary-600 dark:text-primary-400 text-3xl font-bold">
+                        {{ substr($patient->name, 0, 1) }}
+                    </div>
+                </div>
+                <div class="mt-4 text-center sm:mt-0 sm:pt-1 sm:text-left">
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">No. RM: {{ $patient->medical_record_number }}</p>
+                    <p class="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{{ $patient->name }}</p>
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">{{ $patient->phone ?? '-' }} • {{ $patient->email ?? '-' }}</p>
+                </div>
+            </div>
+            <div class="mt-5 flex justify-center gap-3 sm:mt-0">
+                <a href="{{ route('communication.deliveries.create', ['patient_id' => $patient->id]) }}" class="btn-secondary">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Kirim Dokumen
+                </a>
+                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $patient->phone) }}" target="_blank" class="btn-primary bg-green-600 hover:bg-green-500 focus-visible:outline-green-600">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        
+        <!-- Kolom Kiri: Riwayat Pemeriksaan -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="card p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-white mb-4">Riwayat Pemeriksaan</h3>
+                @if($patient->examinations->isEmpty())
+                    <p class="text-sm text-slate-500">Belum ada data pemeriksaan.</p>
+                @else
+                    <div class="flow-root">
+                        <ul role="list" class="-mb-8">
+                            @foreach($patient->examinations as $exam)
+                            <li>
+                                <div class="relative pb-8">
+                                    @if(!$loop->last)
+                                    <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-slate-700" aria-hidden="true"></span>
+                                    @endif
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white dark:ring-slate-800">
+                                                <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                                            <div>
+                                                <p class="text-sm text-slate-500 dark:text-slate-400">Pemeriksaan oleh <span class="font-medium text-slate-900 dark:text-white">{{ $exam->doctor->name ?? '-' }}</span></p>
+                                                <div class="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                                                    <p>Lensa: {{ $exam->lens_brand ?? '-' }} ({{ $exam->lens_type ?? '-' }})</p>
+                                                    <p>OD: {{ $exam->od_visus }} | OS: {{ $exam->os_visus }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="whitespace-nowrap text-right text-sm text-slate-500 dark:text-slate-400">
+                                                <time datetime="{{ $exam->examination_date->format('Y-m-d') }}">{{ $exam->examination_date->format('d M Y') }}</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Kolom Kanan: Unified Communication Timeline -->
+        <div class="lg:col-span-1">
+            <div class="card p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-white mb-4">Communication Timeline</h3>
+                
+                @if($timeline->isEmpty())
+                    <p class="text-sm text-slate-500">Belum ada riwayat komunikasi.</p>
+                @else
+                    <div class="flow-root mt-4">
+                        <ul role="list" class="-mb-8">
+                            @foreach($timeline as $event)
+                            <li>
+                                <div class="relative pb-8">
+                                    @if(!$loop->last)
+                                    <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-slate-700" aria-hidden="true"></span>
+                                    @endif
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full 
+                                                @if($event['type'] == 'email') bg-indigo-500 
+                                                @elseif($event['type'] == 'whatsapp') bg-teal-500 
+                                                @elseif($event['type'] == 'visit') bg-green-500 
+                                                @else bg-blue-500 @endif 
+                                                flex items-center justify-center ring-8 ring-white dark:ring-slate-800">
+                                                
+                                                @if($event['type'] == 'email')
+                                                    <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                                @elseif($event['type'] == 'whatsapp')
+                                                    <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                                @elseif($event['type'] == 'visit')
+                                                    <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                                @else
+                                                    <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                                @endif
+                                            </span>
+                                        </div>
+                                        <div class="flex min-w-0 flex-1 justify-between space-x-2 pt-1.5">
+                                            <div>
+                                                <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $event['title'] }}</p>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $event['description'] }}</p>
+                                                
+                                                @if(isset($event['status']))
+                                                    <span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium mt-1
+                                                        @if($event['status'] == 'sent' || $event['status'] == 'completed') bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/30 dark:text-green-400
+                                                        @elseif($event['status'] == 'failed') bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20 dark:bg-red-900/30 dark:text-red-400
+                                                        @else bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400
+                                                        @endif
+                                                    ">
+                                                        {{ ucfirst($event['status']) }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="whitespace-nowrap text-right text-xs text-slate-500 dark:text-slate-400">
+                                                <time datetime="{{ \Carbon\Carbon::parse($event['date'])->toIso8601String() }}">{{ \Carbon\Carbon::parse($event['date'])->diffForHumans() }}</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
