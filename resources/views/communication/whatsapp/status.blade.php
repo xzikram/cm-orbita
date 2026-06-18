@@ -3,17 +3,18 @@
 @section('title', 'WhatsApp Gateway Status')
 
 @section('content')
-<div class="sm:flex sm:items-center mb-6">
-    <div class="sm:flex-auto">
-        <h1 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">WhatsApp Gateway Status</h1>
-        <p class="mt-2 text-sm text-slate-700 dark:text-slate-400">Hubungkan dan kelola koneksi WhatsApp Gateway lokal untuk pengiriman pesan otomatis gratis.</p>
+<div class="space-y-6">
+    <div class="page-header">
+        <div>
+            <h1 class="page-header-title">WhatsApp Gateway Status</h1>
+            <p class="page-header-desc">Hubungkan dan kelola koneksi WhatsApp Gateway lokal untuk pengiriman pesan otomatis gratis.</p>
+        </div>
     </div>
-</div>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <!-- Left Column: Status Card -->
     <div class="lg:col-span-2 space-y-6">
-        <div class="overflow-hidden bg-white dark:bg-slate-800 shadow sm:rounded-lg card border-t-4 border-emerald-500">
+        <div class="overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm sm:rounded-2xl ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06] border-t-4 border-emerald-500">
             <div class="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
                 <div>
                     <h3 class="text-lg font-semibold leading-6 text-slate-900 dark:text-white">Informasi Koneksi</h3>
