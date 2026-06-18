@@ -19,9 +19,11 @@ git pull origin main
 echo "👉 Memperbarui dependensi Composer (PHP)..."
 composer install --no-dev --optimize-autoloader
 
-# 4. Jalankan migrasi database
+# 4. Jalankan migrasi database & seeding
 echo "👉 Menjalankan migrasi database..."
 php artisan migrate --force
+echo "👉 Menjalankan seeder data master..."
+php artisan db:seed --class=MasterDataSeeder --force
 
 # 5. Pasang dependensi Node.js & Compile aset frontend (Vite)
 echo "👉 Memasang dependensi & mengompilasi aset frontend (Vite)..."
