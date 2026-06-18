@@ -161,6 +161,7 @@ class PdfGeneratorService
             'document_template_id' => $template->id,
             'original_file_path' => $originalPath,
             'generated_file_path' => $generatedRelativePath,
+            'original_filename' => $originalFile->getClientOriginalName(),
             'status' => 'generated',
             'created_by' => $userId,
         ]);

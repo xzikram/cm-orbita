@@ -13,7 +13,7 @@ class ProcessedDocument extends Model
     protected $fillable = [
         'uuid', 'document_number', 'clinic_id', 'patient_id',
         'document_type_id', 'document_template_id',
-        'original_file_path', 'generated_file_path',
+        'original_file_path', 'generated_file_path', 'original_filename',
         'status', 'created_by',
     ];
 

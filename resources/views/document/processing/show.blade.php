@@ -16,7 +16,13 @@
             <a href="{{ Storage::url($processing->generated_file_path) }}" target="_blank" class="btn-secondary">
                 Lihat Generated
             </a>
-            <a href="{{ Storage::url($processing->generated_file_path) }}" download="{{ $processing->document_number }}_final.pdf" class="btn-secondary bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+            @php
+                $filenameWithoutExt = $processing->original_filename 
+                    ? pathinfo($processing->original_filename, PATHINFO_FILENAME) 
+                    : $processing->document_number . '_final';
+                $downloadFilename = $filenameWithoutExt . '_' . date('d-m-Y') . '.pdf';
+            @endphp
+            <a href="{{ Storage::url($processing->generated_file_path) }}" download="{{ $downloadFilename }}" class="btn-secondary bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
                 Download PDF Final
             </a>
             <a href="{{ route('communication.deliveries.create', ['patient_id' => $processing->patient_id]) }}" class="btn-primary">
