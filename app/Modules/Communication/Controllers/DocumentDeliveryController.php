@@ -35,8 +35,13 @@ class DocumentDeliveryController extends Controller
         $accounts = EmailAccount::where('clinic_id', $clinicId)->active()->get();
 
         $selectedPatient = $request->get('patient_id') ? Patient::find($request->get('patient_id')) : null;
+        
+        $processedDoc = null;
+        if ($request->has('processed_document_id')) {
+            $processedDoc = \App\Models\ProcessedDocument::find($request->get('processed_document_id'));
+        }
 
-        return view('communication.deliveries.create', compact('patients', 'documentTypes', 'templates', 'accounts', 'selectedPatient'));
+        return view('communication.deliveries.create', compact('patients', 'documentTypes', 'templates', 'accounts', 'selectedPatient', 'processedDoc'));
     }
 
     public function store(Request $request)
@@ -49,7 +54,8 @@ class DocumentDeliveryController extends Controller
             'email_account_id' => 'required_if:channel,email|nullable|exists:email_accounts,id',
             'recipient_email' => 'required_if:channel,email|nullable|email',
             'recipient_phone' => 'required_if:channel,whatsapp|nullable|string',
-            'document_pdf' => 'required|file|mimes:pdf|max:10240', // Max 10MB
+            'document_pdf' => 'required_without:processed_document_id|nullable|file|mimes:pdf|max:10240', // Max 10MB
+            'processed_document_id' => 'required_without:document_pdf|nullable|exists:processed_documents,id',
             'password_protect' => 'nullable|boolean',
         ]);
 
@@ -57,6 +63,20 @@ class DocumentDeliveryController extends Controller
         $documentType = DocumentType::findOrFail($request->document_type_id);
         $template = EmailTemplate::findOrFail($request->email_template_id);
         $account = $request->channel === 'email' ? EmailAccount::findOrFail($request->email_account_id) : null;
+
+        if ($request->filled('processed_document_id')) {
+            $processedDoc = \App\Models\ProcessedDocument::findOrFail($request->processed_document_id);
+            $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($processedDoc->generated_file_path);
+            $file = new \Illuminate\Http\UploadedFile(
+                $filePath,
+                $processedDoc->original_filename ?? basename($processedDoc->generated_file_path),
+                'application/pdf',
+                null,
+                true // test mode
+            );
+        } else {
+            $file = $request->file('document_pdf');
+        }
 
         $password = null;
         if ($request->boolean('password_protect')) {
@@ -73,7 +93,7 @@ class DocumentDeliveryController extends Controller
                 documentType: $documentType,
                 template: $template,
                 account: $account,
-                file: $request->file('document_pdf'),
+                file: $file,
                 recipientEmail: $request->recipient_email,
                 userId: Auth::id(),
                 channel: $request->channel,

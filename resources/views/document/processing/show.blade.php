@@ -25,8 +25,11 @@
             <a href="{{ Storage::url($processing->generated_file_path) }}" download="{{ $downloadFilename }}" class="btn-secondary bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
                 Download PDF Final
             </a>
-            <a href="{{ route('communication.deliveries.create', ['patient_id' => $processing->patient_id]) }}" class="btn-primary">
+            <a href="{{ route('communication.deliveries.create', ['patient_id' => $processing->patient_id, 'processed_document_id' => $processing->id, 'channel' => 'email']) }}" class="btn-secondary bg-blue-50 text-blue-700 hover:bg-blue-100">
                 Kirim via Email
+            </a>
+            <a href="{{ route('communication.deliveries.create', ['patient_id' => $processing->patient_id, 'processed_document_id' => $processing->id, 'channel' => 'whatsapp']) }}" class="btn-primary bg-emerald-600 hover:bg-emerald-700 border-emerald-600 focus:ring-emerald-500">
+                Kirim via WA
             </a>
         </div>
     </div>

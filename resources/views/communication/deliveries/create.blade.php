@@ -11,6 +11,10 @@
         <form action="{{ route('communication.deliveries.store') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-8">
             @csrf
             
+            @if(isset($processedDoc))
+                <input type="hidden" id="processed_document_id" name="processed_document_id" value="{{ $processedDoc->id }}">
+            @endif
+
             <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
                 <!-- Select Patient -->
                 <div class="sm:col-span-2">
@@ -19,7 +23,7 @@
                         <select id="patient_id" name="patient_id" required class="input-field">
                             <option value="">-- Cari dan Pilih Pasien --</option>
                             @foreach($patients as $patient)
-                                <option value="{{ $patient->id }}" data-email="{{ $patient->email }}" data-phone="{{ $patient->phone }}" data-dob="{{ $patient->date_of_birth ? $patient->date_of_birth->format('d-m-Y') : '' }}" {{ (old('patient_id') == $patient->id || (isset($selectedPatient) && $selectedPatient->id == $patient->id)) ? 'selected' : '' }}>
+                                <option value="{{ $patient->id }}" data-email="{{ $patient->email }}" data-phone="{{ $patient->phone }}" data-dob="{{ $patient->date_of_birth ? $patient->date_of_birth->format('d-m-Y') : '' }}" {{ (old('patient_id') == $patient->id || (isset($selectedPatient) && $selectedPatient->id == $patient->id) || (isset($processedDoc) && $processedDoc->patient_id == $patient->id)) ? 'selected' : '' }}>
                                     {{ $patient->name }} (RM: {{ $patient->medical_record_number }})
                                 </option>
                             @endforeach
@@ -33,8 +37,8 @@
                     <label for="channel" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Metode Pengiriman</label>
                     <div class="mt-2">
                         <select id="channel" name="channel" required class="input-field">
-                            <option value="email" {{ old('channel', 'email') == 'email' ? 'selected' : '' }}>Email</option>
-                            <option value="whatsapp" {{ old('channel') == 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
+                            <option value="email" {{ old('channel', request('channel', 'email')) == 'email' ? 'selected' : '' }}>Email</option>
+                            <option value="whatsapp" {{ old('channel', request('channel')) == 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
                         </select>
                     </div>
                     @error('channel')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -85,7 +89,7 @@
                         <select id="document_type_id" name="document_type_id" required class="input-field">
                             <option value="">-- Pilih Jenis Dokumen --</option>
                             @foreach($documentTypes as $type)
-                                <option value="{{ $type->id }}" {{ old('document_type_id') == $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                                <option value="{{ $type->id }}" {{ (old('document_type_id') == $type->id || (isset($processedDoc) && $processedDoc->document_type_id == $type->id)) ? 'selected' : '' }}>{{ $type->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -121,23 +125,40 @@
                 </div>
                 
                 <!-- File Upload -->
-                <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Upload Dokumen PDF</label>
-                    <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-slate-700 px-6 py-10 bg-slate-50 dark:bg-slate-800/50">
-                        <div class="text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
-                            </svg>
-                            <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
-                                <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
-                                    <span>Pilih file PDF</span>
-                                    <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf" required>
-                                </label>
-                                <p class="pl-1">atau tarik dan lepas ke sini</p>
+                <div class="sm:col-span-2" id="pdf-upload-container">
+                    @if(isset($processedDoc))
+                        <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Dokumen PDF Terpilih</label>
+                        <div class="mt-2 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-4 dark:bg-emerald-950/20 dark:border-emerald-800/30 font-medium">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                </svg>
+                                <div>
+                                    <p class="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Dokumen Hasil Proses DPC</p>
+                                    <p class="text-xs text-emerald-700 dark:text-emerald-400 font-mono mt-0.5">{{ $processedDoc->original_filename ?? basename($processedDoc->generated_file_path) }}</p>
+                                </div>
                             </div>
-                            <p class="text-xs leading-5 text-slate-500" id="file-name-display">PDF max 10MB</p>
+                            <button type="button" onclick="resetToUpload()" class="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">Ganti File</button>
                         </div>
-                    </div>
+                        <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf">
+                    @else
+                        <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Upload Dokumen PDF</label>
+                        <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-slate-700 px-6 py-10 bg-slate-50 dark:bg-slate-800/50">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
+                                </svg>
+                                <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
+                                    <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
+                                        <span>Pilih file PDF</span>
+                                        <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf" required>
+                                    </label>
+                                    <p class="pl-1">atau tarik dan lepas ke sini</p>
+                                </div>
+                                <p class="text-xs leading-5 text-slate-500" id="file-name-display">PDF max 10MB</p>
+                            </div>
+                        </div>
+                    @endif
                     @error('document_pdf')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -238,6 +259,38 @@
             emailAccountId.required = true;
             recipientPhone.required = false;
         }
+    }
+
+    function resetToUpload() {
+        const el = document.getElementById('processed_document_id');
+        if (el) el.remove();
+        
+        const container = document.getElementById('pdf-upload-container');
+        container.innerHTML = `
+            <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Upload Dokumen PDF</label>
+            <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-slate-700 px-6 py-10 bg-slate-50 dark:bg-slate-800/50">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
+                    </svg>
+                    <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
+                        <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
+                            <span>Pilih file PDF</span>
+                            <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf" required>
+                        </label>
+                        <p class="pl-1">atau tarik dan lepas ke sini</p>
+                    </div>
+                    <p class="text-xs leading-5 text-slate-500" id="file-name-display">PDF max 10MB</p>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('document_pdf').addEventListener('change', function(e) {
+            if(e.target.files.length > 0) {
+                document.getElementById('file-name-display').innerText = 'File dipilih: ' + e.target.files[0].name;
+                document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
+            }
+        });
     }
 
     patientSelect.addEventListener('change', updatePatientDetails);
