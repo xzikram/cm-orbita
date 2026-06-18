@@ -31,12 +31,80 @@ const client = new Client({
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-extensions',
+            '--disable-software-rasterizer',
+            '--disable-default-apps',
+            '--mute-audio'
         ]
     }
 });
 
 let isReady = false;
+let reconnecting = false;
+
+// Robust disconnect and reconnection handler
+async function handleDisconnect(reason) {
+    if (reconnecting) return;
+    reconnecting = true;
+    console.log('\n====================================================================');
+    console.log(`Menangani pemutusan koneksi WhatsApp. Alasan: ${reason}`);
+    console.log('====================================================================\n');
+    
+    isReady = false;
+    latestQrDataUrl = null;
+    
+    try {
+        console.log('Mencoba menutup sesi browser Puppeteer sebelumnya...');
+        await client.destroy();
+    } catch (err) {
+        console.error('Gagal destroy client (mungkin browser sudah tertutup):', err.message);
+    }
+    
+    console.log('Menunggu 5 detik sebelum menginisialisasi ulang...');
+    setTimeout(() => {
+        reconnecting = false;
+        console.log('Menginisialisasi ulang WhatsApp Client...');
+        client.initialize().catch(err => {
+            console.error('Gagal menginisialisasi ulang client:', err.message);
+        });
+    }, 5000);
+}
+
+// Global process exception handlers to prevent Node.js from crashing
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception Global Terdeteksi:', err);
+    if (err.message && (err.message.includes('Session closed') || err.message.includes('detached') || err.message.includes('Protocol error'))) {
+        console.warn('Mendeteksi error protokol Puppeteer. Memulai pemulihan otomatis...');
+        handleDisconnect('Uncaught exception: ' + err.message);
+    }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Promise Rejection Terdeteksi:', reason);
+    const msg = (reason && reason.message) || String(reason);
+    if (msg.includes('Session closed') || msg.includes('detached') || msg.includes('Protocol error')) {
+        console.warn('Mendeteksi error protokol Puppeteer di promise. Memulai pemulihan otomatis...');
+        handleDisconnect('Unhandled rejection: ' + msg);
+    }
+});
+
+// Heartbeat check to monitor client health every 30 seconds
+setInterval(async () => {
+    if (isReady) {
+        try {
+            const state = await client.getState();
+            console.log(`[Heartbeat] Status WhatsApp Client: ${state}`);
+            if (state !== 'CONNECTED') {
+                console.warn('[Heartbeat] Status tidak CONNECTED. Memicu re-koneksi...');
+                handleDisconnect('State mismatch: ' + state);
+            }
+        } catch (error) {
+            console.error('[Heartbeat] Gagal mendapatkan state client (browser mungkin hang/crash):', error.message);
+            handleDisconnect('Heartbeat check failed: ' + error.message);
+        }
+    }
+}, 30000);
 
 // Event: QR Code generation for scanning
 client.on('qr', (qr) => {
@@ -66,14 +134,13 @@ client.on('ready', () => {
 client.on('auth_failure', (msg) => {
     console.error('Gagal autentikasi WhatsApp:', msg);
     latestQrDataUrl = null;
+    isReady = false;
+    handleDisconnect('Authentication failure');
 });
 
 client.on('disconnected', (reason) => {
-    console.log('Koneksi WhatsApp terputus:', reason);
-    isReady = false;
-    latestQrDataUrl = null;
-    // Re-initialize client
-    client.initialize();
+    console.log('Koneksi WhatsApp terputus (Event):', reason);
+    handleDisconnect(reason);
 });
 
 // Initialize client connection
