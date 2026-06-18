@@ -81,9 +81,12 @@ class DocumentDeliveryService
 
         // 2. Parse Template Variables
         $subject = $this->parseVariables($template->subject_template, $patient);
+        $subject = str_replace(['{{document_name}}', '{document_name}'], $documentType->name, $subject);
+        $subject = str_replace(['{{clinic_name}}', '{clinic_name}'], $patient->clinic->name ?? config('app.name'), $subject);
+
         $htmlBody = $this->parseVariables($template->html_body, $patient);
-        $htmlBody = str_replace('{{document_name}}', $documentType->name, $htmlBody);
-        $htmlBody = str_replace('{{clinic_name}}', $patient->clinic->name ?? config('app.name'), $htmlBody);
+        $htmlBody = str_replace(['{{document_name}}', '{document_name}'], $documentType->name, $htmlBody);
+        $htmlBody = str_replace(['{{clinic_name}}', '{clinic_name}'], $patient->clinic->name ?? config('app.name'), $htmlBody);
 
         if ($channel === 'whatsapp') {
             // Store the file persistently in public disk for download
@@ -261,7 +264,11 @@ class DocumentDeliveryService
     {
         $replacements = [
             '{{patient_name}}' => $patient->name,
+            '{patient_name}' => $patient->name,
             '{{mrn}}' => $patient->medical_record_number,
+            '{mrn}' => $patient->medical_record_number,
+            '{{medical_record_number}}' => $patient->medical_record_number,
+            '{medical_record_number}' => $patient->medical_record_number,
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $text);
@@ -277,8 +284,8 @@ class DocumentDeliveryService
         $documentType = $delivery->documentType;
         
         $htmlBody = $this->parseVariables($template->html_body, $patient);
-        $htmlBody = str_replace('{{document_name}}', $documentType->name, $htmlBody);
-        $htmlBody = str_replace('{{clinic_name}}', $patient->clinic->name ?? config('app.name'), $htmlBody);
+        $htmlBody = str_replace(['{{document_name}}', '{document_name}'], $documentType->name, $htmlBody);
+        $htmlBody = str_replace(['{{clinic_name}}', '{clinic_name}'], $patient->clinic->name ?? config('app.name'), $htmlBody);
 
         // Convert HTML template body to plain text for WhatsApp
         $textBody = preg_replace('/<br\s*\/?>/i', "\n", $htmlBody);
