@@ -24,7 +24,7 @@ class MasterDataSeeder extends Seeder
         ];
 
         foreach ($statuses as $status) {
-            FollowUpStatus::create($status);
+            FollowUpStatus::updateOrCreate(['slug' => $status['slug']], $status);
         }
 
         // ── Lens Conditions ──
@@ -37,42 +37,45 @@ class MasterDataSeeder extends Seeder
         ];
 
         foreach ($conditions as $condition) {
-            LensCondition::create($condition);
+            LensCondition::updateOrCreate(['slug' => $condition['slug']], $condition);
         }
 
         // ── Reminder Templates ──
-        ReminderTemplate::create([
-            'clinic_id' => $clinicId,
-            'name' => 'Reminder Kontrol Pasien',
-            'type' => 'follow_up',
-            'channel' => 'whatsapp',
-            'content' => "Yth. {patient_name},\n\nIni adalah pengingat untuk jadwal kontrol lensa kontak Anda di {clinic_name}.\n\n📅 Tanggal: {scheduled_date}\n👨‍⚕️ Dokter: {doctor_name}\n📋 Kontrol: {follow_up_label}\n\nMohon hadir tepat waktu. Jika berhalangan, silakan hubungi kami untuk penjadwalan ulang.\n\nTerima kasih.\n{clinic_name}",
-            'variables' => ['patient_name', 'clinic_name', 'scheduled_date', 'doctor_name', 'follow_up_label'],
-            'is_default' => true,
-            'is_active' => true,
-        ]);
+        ReminderTemplate::updateOrCreate(
+            ['clinic_id' => $clinicId, 'name' => 'Reminder Kontrol Pasien'],
+            [
+                'type' => 'follow_up',
+                'channel' => 'whatsapp',
+                'content' => "Yth. {patient_name},\n\nIni adalah pengingat untuk jadwal kontrol lensa kontak Anda di {clinic_name}.\n\n📅 Tanggal: {scheduled_date}\n👨‍⚕️ Dokter: {doctor_name}\n📋 Kontrol: {follow_up_label}\n\nMohon hadir tepat waktu. Jika berhalangan, silakan hubungi kami untuk penjadwalan ulang.\n\nTerima kasih.\n{clinic_name}",
+                'variables' => ['patient_name', 'clinic_name', 'scheduled_date', 'doctor_name', 'follow_up_label'],
+                'is_default' => true,
+                'is_active' => true,
+            ]
+        );
 
-        ReminderTemplate::create([
-            'clinic_id' => $clinicId,
-            'name' => 'Reminder Kontrol untuk Dokter',
-            'type' => 'follow_up',
-            'channel' => 'whatsapp',
-            'content' => "Yth. {doctor_name},\n\nPasien berikut memiliki jadwal kontrol:\n\n👤 Pasien: {patient_name}\n📋 No. RM: {medical_record_number}\n📅 Tanggal: {scheduled_date}\n🏥 Kontrol: {follow_up_label}\n\nTerima kasih.\n{clinic_name}",
-            'variables' => ['doctor_name', 'patient_name', 'medical_record_number', 'scheduled_date', 'follow_up_label', 'clinic_name'],
-            'is_default' => true,
-            'is_active' => true,
-        ]);
+        ReminderTemplate::updateOrCreate(
+            ['clinic_id' => $clinicId, 'name' => 'Reminder Kontrol untuk Dokter'],
+            [
+                'type' => 'follow_up',
+                'channel' => 'whatsapp',
+                'content' => "Yth. {doctor_name},\n\nPasien berikut memiliki jadwal kontrol:\n\n👤 Pasien: {patient_name}\n📋 No. RM: {medical_record_number}\n📅 Tanggal: {scheduled_date}\n🏥 Kontrol: {follow_up_label}\n\nTerima kasih.\n{clinic_name}",
+                'variables' => ['doctor_name', 'patient_name', 'medical_record_number', 'scheduled_date', 'follow_up_label', 'clinic_name'],
+                'is_default' => true,
+                'is_active' => true,
+            ]
+        );
 
-        ReminderTemplate::create([
-            'clinic_id' => $clinicId,
-            'name' => 'Reminder Pasien Tidak Hadir',
-            'type' => 'follow_up',
-            'channel' => 'whatsapp',
-            'content' => "Yth. {patient_name},\n\nKami melihat Anda belum hadir untuk kontrol lensa kontak yang dijadwalkan pada {scheduled_date}.\n\nKontrol rutin sangat penting untuk kesehatan mata Anda. Silakan hubungi kami untuk menjadwalkan ulang.\n\n📞 {clinic_phone}\n\nTerima kasih.\n{clinic_name}",
-            'variables' => ['patient_name', 'scheduled_date', 'clinic_phone', 'clinic_name'],
-            'is_default' => false,
-            'is_active' => true,
-        ]);
+        ReminderTemplate::updateOrCreate(
+            ['clinic_id' => $clinicId, 'name' => 'Reminder Pasien Tidak Hadir'],
+            [
+                'type' => 'follow_up',
+                'channel' => 'whatsapp',
+                'content' => "Yth. {patient_name},\n\nKami melihat Anda belum hadir untuk kontrol lensa kontak yang dijadwalkan pada {scheduled_date}.\n\nKontrol rutin sangat penting untuk kesehatan mata Anda. Silakan hubungi kami untuk menjadwalkan ulang.\n\n📞 {clinic_phone}\n\nTerima kasih.\n{clinic_name}",
+                'variables' => ['patient_name', 'scheduled_date', 'clinic_phone', 'clinic_name'],
+                'is_default' => false,
+                'is_active' => true,
+            ]
+        );
 
         // ── Document Types ──
         $documentTypes = [
