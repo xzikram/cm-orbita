@@ -36,14 +36,25 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# 6. Perbarui dependensi WhatsApp Gateway & Restart Layanan
+# 6. Perbarui dependensi WhatsApp Gateway & Restart Layanan secara Bersih
 if [ -d "whatsapp-gateway" ]; then
     echo "👉 Memperbarui dependensi WhatsApp Gateway..."
     cd whatsapp-gateway
     npm install --no-audit --no-fund
     
-    echo "👉 Merestart WhatsApp Gateway di background (PM2)..."
-    pm2 restart whatsapp-gateway
+    echo "👉 Menghentikan proses WhatsApp Gateway lama & membersihkan browser zombie..."
+    pm2 delete whatsapp-gateway 2>/dev/null || true
+    kill -9 $(pgrep -f "node.*server.js") 2>/dev/null || true
+    kill -9 $(pgrep -f chromium) 2>/dev/null || true
+    kill -9 $(pgrep -f chrome) 2>/dev/null || true
+    
+    # Pastikan port 3000 kosong
+    if command -v fuser >/dev/null 2>&1; then
+        fuser -k 3000/tcp 2>/dev/null || true
+    fi
+    
+    echo "👉 Menjalankan kembali WhatsApp Gateway dengan PM2..."
+    pm2 start server.js --name "whatsapp-gateway"
     cd ..
 fi
 
