@@ -23,6 +23,11 @@ composer install --no-dev --optimize-autoloader
 echo "👉 Menjalankan migrasi database..."
 php artisan migrate --force
 
+# 5. Pasang dependensi Node.js & Compile aset frontend (Vite)
+echo "👉 Memasang dependensi & mengompilasi aset frontend (Vite)..."
+npm install --no-audit --no-fund
+npm run build
+
 # 5. Bersihkan dan bangun ulang cache Laravel
 echo "👉 Membersihkan dan mengoptimalkan cache..."
 php artisan config:cache
