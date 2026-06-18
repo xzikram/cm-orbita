@@ -17,7 +17,8 @@ git pull origin main
 
 # 3. Pasang dependency PHP baru (jika ada)
 echo "👉 Memperbarui dependensi Composer (PHP)..."
-composer install --no-dev --optimize-autoloader
+export COMPOSER_ALLOW_SUPERUSER=1
+composer install --no-dev --optimize-autoloader --no-interaction
 
 # 4. Jalankan migrasi database & seeding
 echo "👉 Menjalankan migrasi database..."
