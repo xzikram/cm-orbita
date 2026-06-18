@@ -144,7 +144,17 @@ node server.js</pre>
 @if($status['active_provider'] === 'selfhosted')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const GATEWAY_URL = "{{ $config['url'] ?? 'http://localhost:3000' }}";
+        let GATEWAY_URL = "{{ config('whatsapp.providers.selfhosted.url', 'http://localhost:3000') }}";
+        
+        // Jika diakses secara remote, arahkan localhost ke IP/hostname server yang sedang aktif
+        if (GATEWAY_URL.includes('localhost') || GATEWAY_URL.includes('127.0.0.1')) {
+            try {
+                const urlObj = new URL(GATEWAY_URL);
+                GATEWAY_URL = window.location.protocol + '//' + window.location.hostname + ':' + urlObj.port;
+            } catch (e) {
+                GATEWAY_URL = window.location.protocol + '//' + window.location.hostname + ':3000';
+            }
+        }
         
         const statusBadge = document.getElementById('status-badge');
         const connectionError = document.getElementById('connection-error');
