@@ -3,6 +3,80 @@
 @section('title', 'Kirim Dokumen (Document Delivery)')
 
 @section('content')
+<!-- Select2 CSS & JS Assets -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    .select2-container--default .select2-selection--single {
+        height: 42px !important;
+        border: 1px solid rgb(209, 213, 219) !important;
+        border-radius: 0.375rem !important;
+        display: flex !important;
+        align-items: center !important;
+        background-color: #fff !important;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .select2-container--default .select2-selection--single:focus-within {
+        border-color: #10B981 !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: rgb(15, 23, 42) !important;
+        font-size: 0.875rem !important;
+        padding-left: 0.5rem !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px !important;
+        right: 8px !important;
+    }
+    .select2-dropdown {
+        border: 1px solid rgb(226, 232, 240) !important;
+        border-radius: 0.375rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        background-color: #fff !important;
+        z-index: 9999 !important;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #10B981 !important; /* Theme emerald */
+    }
+    .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: rgb(156, 163, 175) !important;
+    }
+    
+    /* Dark Mode overrides */
+    .dark .select2-container--default .select2-selection--single {
+        background-color: rgb(30, 41, 59) !important; /* bg-slate-800 */
+        border-color: rgb(71, 85, 105) !important; /* border-slate-600 */
+    }
+    .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: rgb(241, 245, 249) !important; /* text-slate-100 */
+    }
+    .dark .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: rgb(148, 163, 184) !important; /* text-slate-400 */
+    }
+    .dark .select2-dropdown {
+        background-color: rgb(30, 41, 59) !important;
+        border-color: rgb(71, 85, 105) !important;
+        color: rgb(241, 245, 249) !important;
+    }
+    .dark .select2-results__option {
+        color: rgb(241, 245, 249) !important;
+        background-color: rgb(30, 41, 59) !important;
+    }
+    .dark .select2-results__option[aria-selected="true"] {
+        background-color: rgb(51, 65, 85) !important; /* bg-slate-700 */
+    }
+    .dark .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #10B981 !important; /* keep emerald */
+        color: #fff !important;
+    }
+    .dark .select2-search__field {
+        background-color: rgb(15, 23, 42) !important; /* bg-slate-900 */
+        border-color: rgb(71, 85, 105) !important;
+        color: rgb(241, 245, 249) !important;
+    }
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <div class="max-w-4xl mx-auto">
     <div class="card p-6">
         <h2 class="text-base font-semibold leading-7 text-slate-900 dark:text-white">Form Pengiriman Dokumen PDF</h2>
@@ -17,19 +91,35 @@
 
             <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
                 <!-- Select Patient -->
-                <div class="sm:col-span-2">
+                <div>
                     <label for="patient_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Pasien</label>
                     <div class="mt-2">
-                        <select id="patient_id" name="patient_id" required class="input-field">
+                        <select id="patient_id" name="patient_id" required class="input-field select2-enable w-full">
                             <option value="">-- Cari dan Pilih Pasien --</option>
+                            @php
+                                $oldPatientId = old('patient_id');
+                                $hasOldManualPatient = $oldPatientId && !is_numeric($oldPatientId);
+                            @endphp
+                            @if($hasOldManualPatient)
+                                <option value="{{ $oldPatientId }}" selected="selected" data-email="{{ old('recipient_email') }}" data-phone="{{ old('recipient_phone') }}" data-dob="{{ old('manual_dob') }}">{{ $oldPatientId }} (Pasien Baru)</option>
+                            @endif
                             @foreach($patients as $patient)
-                                <option value="{{ $patient->id }}" data-email="{{ $patient->email }}" data-phone="{{ $patient->phone }}" data-dob="{{ $patient->date_of_birth ? $patient->date_of_birth->format('d-m-Y') : '' }}" {{ (old('patient_id') == $patient->id || (isset($selectedPatient) && $selectedPatient->id == $patient->id) || (isset($processedDoc) && $processedDoc->patient_id == $patient->id)) ? 'selected' : '' }}>
+                                <option value="{{ $patient->id }}" data-email="{{ $patient->email }}" data-phone="{{ $patient->phone }}" data-dob="{{ $patient->date_of_birth ? $patient->date_of_birth->format('Y-m-d') : '' }}" {{ (old('patient_id') == $patient->id || (isset($selectedPatient) && $selectedPatient->id == $patient->id) || (isset($processedDoc) && $processedDoc->patient_id == $patient->id)) ? 'selected' : '' }}>
                                     {{ $patient->name }} (RM: {{ $patient->medical_record_number }})
                                 </option>
                             @endforeach
                         </select>
                     </div>
                     @error('patient_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <!-- Patient DOB -->
+                <div>
+                    <label for="manual_dob" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Tanggal Lahir Pasien</label>
+                    <div class="mt-2">
+                        <input type="date" name="manual_dob" id="manual_dob" class="input-field" value="{{ old('manual_dob', (isset($selectedPatient) && $selectedPatient->date_of_birth ? $selectedPatient->date_of_birth->format('Y-m-d') : (isset($processedDoc) && $processedDoc->patient && $processedDoc->patient->date_of_birth ? $processedDoc->patient->date_of_birth->format('Y-m-d') : ''))) }}">
+                    </div>
+                    @error('manual_dob')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <!-- Select Channel (Metode Pengiriman) -->
@@ -198,38 +288,103 @@
     const emailAccountId = document.getElementById('email_account_id');
     const passwordProtect = document.getElementById('password_protect');
     const passwordHelpText = document.getElementById('password-help-text');
+    const manualDob = document.getElementById('manual_dob');
 
-    function updatePatientDetails() {
+    function updatePasswordHelpText() {
+        const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+        const val = selectedOption ? selectedOption.value : '';
+        const isExisting = val && !isNaN(val);
+        
+        let dobValue = '';
+        if (isExisting) {
+            dobValue = selectedOption.getAttribute('data-dob') || '';
+        } else {
+            dobValue = manualDob.value || ''; // YYYY-MM-DD format
+        }
+        
+        if (dobValue) {
+            const parts = dobValue.split('-');
+            if (parts.length === 3) {
+                const formattedDob = parts[2] + parts[1] + parts[0];
+                passwordProtect.disabled = false;
+                passwordHelpText.innerText = `Password untuk pasien ini: ${formattedDob} (berdasarkan tanggal lahir ${parts[2]}-${parts[1]}-${parts[0]}).`;
+                passwordHelpText.classList.remove('text-red-500');
+                passwordHelpText.classList.add('text-slate-500');
+                return;
+            }
+        }
+        
+        passwordProtect.checked = false;
+        passwordProtect.disabled = true;
+        passwordHelpText.innerText = "Pasien tidak memiliki data tanggal lahir/tanggal lahir belum diisi. Proteksi password tidak dapat diaktifkan.";
+        passwordHelpText.classList.remove('text-slate-500');
+        passwordHelpText.classList.add('text-red-500', 'font-medium');
+    }
+
+    function updatePatientDetails(isPageLoad = false) {
         const selectedOption = patientSelect.options[patientSelect.selectedIndex];
         if (!selectedOption || selectedOption.value === '') {
-            recipientEmail.value = '';
-            recipientPhone.value = '';
+            if (!isPageLoad) {
+                recipientEmail.value = '';
+                recipientPhone.value = '';
+                manualDob.value = '';
+            }
             passwordProtect.disabled = false;
             passwordHelpText.innerText = "Password untuk membuka file PDF adalah tanggal lahir pasien (Format: DDMMYYYY, contoh: 15051990).";
             passwordHelpText.classList.remove('text-red-500');
             passwordHelpText.classList.add('text-slate-500');
+            
+            // Enable DOB field
+            manualDob.readOnly = false;
+            manualDob.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'pointer-events-none');
             return;
         }
 
         const email = selectedOption.getAttribute('data-email') || '';
         const phone = selectedOption.getAttribute('data-phone') || '';
         const dob = selectedOption.getAttribute('data-dob') || '';
+        const val = selectedOption.value;
+        const isExisting = !isNaN(val) && val !== '';
 
-        recipientEmail.value = email;
-        recipientPhone.value = phone;
+        if (!isPageLoad) {
+            if (isExisting) {
+                recipientEmail.value = email;
+                recipientPhone.value = phone;
+                manualDob.value = dob;
+            } else {
+                recipientEmail.value = '';
+                recipientPhone.value = '';
+                manualDob.value = '';
+            }
+        }
 
-        if (dob) {
-            const rawDob = dob.replace(/-/g, ''); // Format: DDMMYYYY
-            passwordProtect.disabled = false;
-            passwordHelpText.innerText = `Password untuk pasien ini: ${rawDob} (berdasarkan tanggal lahir ${dob}).`;
-            passwordHelpText.classList.remove('text-red-500');
-            passwordHelpText.classList.add('text-slate-500');
+        if (isExisting) {
+            // Make DOB readOnly if existing patient
+            manualDob.readOnly = true;
+            manualDob.classList.add('bg-slate-100', 'dark:bg-slate-800', 'pointer-events-none');
+            
+            if (dob) {
+                const parts = dob.split('-');
+                if (parts.length === 3) {
+                    const formattedDob = parts[2] + parts[1] + parts[0];
+                    passwordProtect.disabled = false;
+                    passwordHelpText.innerText = `Password untuk pasien ini: ${formattedDob} (berdasarkan tanggal lahir ${parts[2]}-${parts[1]}-${parts[0]}).`;
+                    passwordHelpText.classList.remove('text-red-500');
+                    passwordHelpText.classList.add('text-slate-500');
+                }
+            } else {
+                passwordProtect.checked = false;
+                passwordProtect.disabled = true;
+                passwordHelpText.innerText = "Pasien tidak memiliki data tanggal lahir. Proteksi password tidak dapat diaktifkan.";
+                passwordHelpText.classList.remove('text-slate-500');
+                passwordHelpText.classList.add('text-red-500', 'font-medium');
+            }
         } else {
-            passwordProtect.checked = false;
-            passwordProtect.disabled = true;
-            passwordHelpText.innerText = "Pasien tidak memiliki data tanggal lahir. Proteksi password tidak dapat diaktifkan.";
-            passwordHelpText.classList.remove('text-slate-500');
-            passwordHelpText.classList.add('text-red-500', 'font-medium');
+            // Make DOB editable if manual patient
+            manualDob.readOnly = false;
+            manualDob.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'pointer-events-none');
+            
+            updatePasswordHelpText();
         }
     }
 
@@ -237,24 +392,20 @@
         const channel = channelSelect.value;
         const submitText = document.getElementById('submit-button-text');
         if (channel === 'whatsapp') {
-            // Show WhatsApp fields, hide Email fields
             emailFieldsGroup.style.display = 'none';
             whatsappFieldsGroup.style.display = 'block';
             templateLabel.innerText = 'WhatsApp Template';
             submitText.innerText = 'Proses Dokumen & Kirim WA';
             
-            // Adjust validation requirements
             recipientEmail.required = false;
             emailAccountId.required = false;
             recipientPhone.required = true;
         } else {
-            // Show Email fields, hide WhatsApp fields
             emailFieldsGroup.style.display = 'grid';
             whatsappFieldsGroup.style.display = 'none';
             templateLabel.innerText = 'Email Template';
             submitText.innerText = 'Kirim Email Sekarang';
             
-            // Adjust validation requirements
             recipientEmail.required = true;
             emailAccountId.required = true;
             recipientPhone.required = false;
@@ -293,11 +444,39 @@
         });
     }
 
-    patientSelect.addEventListener('change', updatePatientDetails);
-    channelSelect.addEventListener('change', toggleDeliveryMethod);
-    
-    // Initial run on page load
-    updatePatientDetails();
-    toggleDeliveryMethod();
+    $(document).ready(function() {
+        // Initialize Select2 on patient_id dropdown with tagging enabled
+        $('#patient_id').select2({
+            tags: true,
+            placeholder: "-- Cari dan Pilih Pasien --",
+            allowClear: true,
+            createTag: function (params) {
+                var term = $.trim(params.term);
+                if (term === '') {
+                    return null;
+                }
+                return {
+                    id: term,
+                    text: term + ' (Pasien Baru)',
+                    newTag: true
+                };
+            }
+        });
+
+        // Trigger updatePatientDetails when patient_id changes
+        $('#patient_id').on('change', function() {
+            updatePatientDetails(false);
+        });
+
+        // Listen for changes in the manual DOB field to update password protection helper text
+        manualDob.addEventListener('input', updatePasswordHelpText);
+        manualDob.addEventListener('change', updatePasswordHelpText);
+
+        channelSelect.addEventListener('change', toggleDeliveryMethod);
+
+        // Initial execution
+        updatePatientDetails(true);
+        toggleDeliveryMethod();
+    });
 </script>
 @endsection

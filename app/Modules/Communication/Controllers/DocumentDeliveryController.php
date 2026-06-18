@@ -47,7 +47,7 @@ class DocumentDeliveryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'patient_id' => 'required|exists:patients,id',
+            'patient_id' => 'required|string|max:255',
             'document_type_id' => 'required|exists:document_types,id',
             'email_template_id' => 'required|exists:email_templates,id',
             'channel' => 'required|in:email,whatsapp',
@@ -57,9 +57,46 @@ class DocumentDeliveryController extends Controller
             'document_pdf' => 'required_without:processed_document_id|nullable|file|mimes:pdf|max:10240', // Max 10MB
             'processed_document_id' => 'required_without:document_pdf|nullable|exists:processed_documents,id',
             'password_protect' => 'nullable|boolean',
+            'manual_dob' => 'nullable|date',
         ]);
 
-        $patient = Patient::findOrFail($request->patient_id);
+        $patientId = $request->patient_id;
+        
+        if (is_numeric($patientId)) {
+            $patient = Patient::findOrFail($patientId);
+        } else {
+            // Create a new Patient on the fly
+            $patient = Patient::where('clinic_id', Auth::user()->clinic_id)
+                ->where('name', $patientId)
+                ->first();
+                
+            if (!$patient) {
+                $mrn = 'RM-' . date('Ymd') . '-' . rand(1000, 9999);
+                while (Patient::where('clinic_id', Auth::user()->clinic_id)->where('medical_record_number', $mrn)->exists()) {
+                    $mrn = 'RM-' . date('Ymd') . '-' . rand(1000, 9999);
+                }
+                
+                $dob = null;
+                if ($request->filled('manual_dob')) {
+                    try {
+                        $dob = \Carbon\Carbon::parse($request->manual_dob);
+                    } catch (\Exception $e) {
+                        // ignore
+                    }
+                }
+
+                $patient = Patient::create([
+                    'clinic_id' => Auth::user()->clinic_id,
+                    'name' => $patientId,
+                    'medical_record_number' => $mrn,
+                    'phone' => $request->recipient_phone,
+                    'email' => $request->recipient_email,
+                    'date_of_birth' => $dob,
+                    'is_active' => true,
+                ]);
+            }
+        }
+
         $documentType = DocumentType::findOrFail($request->document_type_id);
         $template = EmailTemplate::findOrFail($request->email_template_id);
         $account = $request->channel === 'email' ? EmailAccount::findOrFail($request->email_account_id) : null;
