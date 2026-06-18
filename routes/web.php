@@ -98,4 +98,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/audit-logs', [AuditLogController::class, 'index'])
         ->name('audit.index')
         ->middleware('permission:audit.view');
+
+    // ── Administration (User & Access Management) ──
+    Route::prefix('administration')->name('administration.')->group(function () {
+        Route::resource('users', \App\Modules\MasterData\Controllers\UserController::class)->except('show');
+        Route::resource('roles', \App\Modules\MasterData\Controllers\RoleController::class)->except('show');
+    });
 });
+
