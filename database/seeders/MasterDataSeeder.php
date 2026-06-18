@@ -77,12 +77,66 @@ class MasterDataSeeder extends Seeder
             ]
         );
 
+        // WA Templates for New Document Types
+        $waDocTemplates = [
+            [
+                'name' => 'Pengiriman Resume Pasien Pulang Post LVC',
+                'content' => "Yth. {patient_name},\n\nBerikut dilampirkan dokumen Resume Pasien Pulang Post LVC Anda dari {clinic_name}.\n\nTerima kasih.",
+                'variables' => ['patient_name', 'clinic_name'],
+            ],
+            [
+                'name' => 'Pengiriman Ringkasan Pulang Pasien Rawat Inap',
+                'content' => "Yth. {patient_name},\n\nBerikut dilampirkan dokumen Ringkasan Pulang Pasien Rawat Inap Anda dari {clinic_name}.\n\nTerima kasih.",
+                'variables' => ['patient_name', 'clinic_name'],
+            ],
+            [
+                'name' => 'Pengiriman Resume Pulang Pasien IGD',
+                'content' => "Yth. {patient_name},\n\nBerikut dilampirkan dokumen Resume Pulang Pasien IGD Anda dari {clinic_name}.\n\nTerima kasih.",
+                'variables' => ['patient_name', 'clinic_name'],
+            ],
+            [
+                'name' => 'Pengiriman Hasil Foto Radiologi',
+                'content' => "Yth. {patient_name},\n\nBerikut dilampirkan dokumen Hasil Foto Radiologi pemeriksaan Anda di {clinic_name}.\n\nTerima kasih.",
+                'variables' => ['patient_name', 'clinic_name'],
+            ],
+            [
+                'name' => 'Pengiriman Hasil Pemeriksaan CDC',
+                'content' => "Yth. {patient_name},\n\nBerikut dilampirkan dokumen Hasil Pemeriksaan CDC Anda dari {clinic_name}.\n\nTerima kasih.",
+                'variables' => ['patient_name', 'clinic_name'],
+            ],
+            [
+                'name' => 'Pengiriman Resume Pasien Pulang Post Operasi Kamar Bedah',
+                'content' => "Yth. {patient_name},\n\nBerikut dilampirkan dokumen Resume Pasien Pulang Post Operasi Kamar Bedah Anda dari {clinic_name}.\n\nTerima kasih.",
+                'variables' => ['patient_name', 'clinic_name'],
+            ],
+        ];
+
+        foreach ($waDocTemplates as $waTmpl) {
+            ReminderTemplate::updateOrCreate(
+                ['clinic_id' => $clinicId, 'name' => $waTmpl['name']],
+                [
+                    'type' => 'custom',
+                    'channel' => 'whatsapp',
+                    'content' => $waTmpl['content'],
+                    'variables' => $waTmpl['variables'],
+                    'is_default' => false,
+                    'is_active' => true,
+                ]
+            );
+        }
+
         // ── Document Types ──
         $documentTypes = [
             ['code' => 'medical_resume', 'name' => 'Resume Medis', 'clinic_id' => $clinicId],
             ['code' => 'prescription', 'name' => 'Resep Kacamata / Lensa', 'clinic_id' => $clinicId],
             ['code' => 'follow_up_letter', 'name' => 'Surat Rencana Kontrol', 'clinic_id' => $clinicId],
             ['code' => 'referral_letter', 'name' => 'Surat Rujukan', 'clinic_id' => $clinicId],
+            ['code' => 'lasik_resume', 'name' => 'Resume Pasien Pulang Post LVC', 'clinic_id' => $clinicId],
+            ['code' => 'ipd_resume', 'name' => 'Ringkasan Pulang Pasien Rawat Inap', 'clinic_id' => $clinicId],
+            ['code' => 'igd_resume', 'name' => 'Resume Pulang Pasien IGD', 'clinic_id' => $clinicId],
+            ['code' => 'radiology_result', 'name' => 'Hasil Foto Radiologi', 'clinic_id' => $clinicId],
+            ['code' => 'cdc_result', 'name' => 'Hasil Pemeriksaan CDC', 'clinic_id' => $clinicId],
+            ['code' => 'ot_resume', 'name' => 'Resume Pasien Pulang Post Operasi Kamar Bedah', 'clinic_id' => $clinicId],
         ];
 
         foreach ($documentTypes as $docType) {
@@ -114,7 +168,55 @@ class MasterDataSeeder extends Seeder
                 'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Rencana Kontrol Rutin</strong> Anda di {clinic_name}.</p><p>Terima kasih.</p>',
                 'variables' => ['patient_name', 'clinic_name'],
                 'clinic_id' => $clinicId,
-            ]
+            ],
+            [
+                'code' => 'lasik_resume_delivery',
+                'name' => 'Pengiriman Resume Pasien Pulang Post LVC',
+                'subject_template' => 'Resume Pasien Pulang Post LVC: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Resume Pasien Pulang Post LVC</strong> Anda dari {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
+            [
+                'code' => 'ipd_resume_delivery',
+                'name' => 'Pengiriman Ringkasan Pulang Pasien Rawat Inap',
+                'subject_template' => 'Ringkasan Pulang Pasien Rawat Inap: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Ringkasan Pulang Pasien Rawat Inap</strong> Anda dari {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
+            [
+                'code' => 'igd_resume_delivery',
+                'name' => 'Pengiriman Resume Pulang Pasien IGD',
+                'subject_template' => 'Resume Pulang Pasien IGD: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Resume Pulang Pasien IGD</strong> Anda dari {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
+            [
+                'code' => 'radiology_result_delivery',
+                'name' => 'Pengiriman Hasil Foto Radiologi',
+                'subject_template' => 'Hasil Foto Radiologi: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Hasil Foto Radiologi</strong> pemeriksaan Anda di {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
+            [
+                'code' => 'cdc_result_delivery',
+                'name' => 'Pengiriman Hasil Pemeriksaan CDC',
+                'subject_template' => 'Hasil Pemeriksaan CDC: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Hasil Pemeriksaan CDC</strong> Anda dari {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
+            [
+                'code' => 'ot_resume_delivery',
+                'name' => 'Pengiriman Resume Pasien Pulang Post Operasi Kamar Bedah',
+                'subject_template' => 'Resume Pasien Pulang Post Operasi Kamar Bedah: {patient_name}',
+                'html_body' => '<p>Halo {patient_name},</p><p>Berikut kami lampirkan dokumen <strong>Resume Pasien Pulang Post Operasi Kamar Bedah</strong> Anda dari {clinic_name}.</p><p>Terima kasih.</p>',
+                'variables' => ['patient_name', 'clinic_name'],
+                'clinic_id' => $clinicId,
+            ],
         ];
 
         foreach ($emailTemplates as $template) {
