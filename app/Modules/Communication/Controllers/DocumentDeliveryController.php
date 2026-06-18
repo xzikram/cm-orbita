@@ -195,7 +195,10 @@ class DocumentDeliveryController extends Controller
         
         if ($status['active_provider'] === 'selfhosted') {
             try {
-                $response = \Illuminate\Support\Facades\Http::timeout(3)->get($url . '/status');
+                $clientId = 'user-' . Auth::id();
+                $response = \Illuminate\Support\Facades\Http::timeout(3)->get($url . '/status', [
+                    'clientId' => $clientId
+                ]);
                 if ($response->successful()) {
                     $status['connected'] = $response->json('ready') === true;
                     $status['qr'] = $response->json('qr');

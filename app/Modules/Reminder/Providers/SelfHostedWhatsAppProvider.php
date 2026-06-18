@@ -22,25 +22,32 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function sendMessage(string $phone, string $message): SendResult
     {
         $startTime = microtime(true);
- 
+        $clientId = \Illuminate\Support\Facades\Auth::check() ? 'user-' . \Illuminate\Support\Facades\Auth::id() : null;
+
         try {
             $endpoint = rtrim($this->url, '/') . '/send-message';
             
+            $payload = [
+                'phone' => $phone,
+                'message' => $message,
+            ];
+
+            if ($clientId) {
+                $payload['clientId'] = $clientId;
+            }
+
             $response = Http::timeout($this->timeout)
-                ->post($endpoint, [
-                    'phone' => $phone,
-                    'message' => $message,
-                ]);
- 
+                ->post($endpoint, $payload);
+
             $durationMs = (microtime(true) - $startTime) * 1000;
- 
+
             if ($response->successful()) {
                 return SendResult::success(
                     messageId: $response->json('messageId') ?? 'selfhosted_' . uniqid(),
                     durationMs: $durationMs
                 );
             }
- 
+
             return SendResult::failure(
                 error: $response->json('error') ?? 'Gagal mengirim pesan via Gateway Mandiri',
                 responseCode: $response->status(),
@@ -58,27 +65,34 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption): SendResult
     {
         $startTime = microtime(true);
- 
+        $clientId = \Illuminate\Support\Facades\Auth::check() ? 'user-' . \Illuminate\Support\Facades\Auth::id() : null;
+
         try {
             $endpoint = rtrim($this->url, '/') . '/send-document';
             
+            $payload = [
+                'phone' => $phone,
+                'fileUrl' => $fileUrl,
+                'filename' => $filename,
+                'caption' => $caption,
+            ];
+
+            if ($clientId) {
+                $payload['clientId'] = $clientId;
+            }
+
             $response = Http::timeout($this->timeout)
-                ->post($endpoint, [
-                    'phone' => $phone,
-                    'fileUrl' => $fileUrl,
-                    'filename' => $filename,
-                    'caption' => $caption,
-                ]);
- 
+                ->post($endpoint, $payload);
+
             $durationMs = (microtime(true) - $startTime) * 1000;
- 
+
             if ($response->successful()) {
                 return SendResult::success(
                     messageId: $response->json('messageId') ?? 'selfhosted_doc_' . uniqid(),
                     durationMs: $durationMs
                 );
             }
- 
+
             return SendResult::failure(
                 error: $response->json('error') ?? 'Gagal mengirim dokumen via Gateway Mandiri',
                 responseCode: $response->status(),
@@ -102,8 +116,15 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function checkStatus(): bool
     {
         try {
+            $clientId = \Illuminate\Support\Facades\Auth::check() ? 'user-' . \Illuminate\Support\Facades\Auth::id() : null;
             $endpoint = rtrim($this->url, '/') . '/status';
-            $response = Http::timeout(5)->get($endpoint);
+            
+            $params = [];
+            if ($clientId) {
+                $params['clientId'] = $clientId;
+            }
+
+            $response = Http::timeout(5)->get($endpoint, $params);
  
             return $response->successful() && $response->json('ready') === true;
         } catch (\Exception) {

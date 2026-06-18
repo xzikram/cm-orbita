@@ -54,8 +54,9 @@ if [ -d "whatsapp-gateway" ]; then
         fuser -k 3000/tcp 2>/dev/null || true
     fi
     
-    echo "👉 Langkah 3: Hapus seluruh folder sesi browser lama..."
-    rm -rf /var/www/clinical-system/whatsapp-gateway/.wwebjs_auth
+    # Jangan menghapus seluruh folder .wwebjs_auth agar sesi login multi-user tidak terputus.
+    # Jika ada sesi spesifik yang bermasalah, gunakan tombol "Reset Koneksi" di UI masing-masing pengguna.
+    echo "👉 Langkah 3: Melewati pembersihan sesi (sesi dipertahankan)..."
     
     echo "👉 Langkah 4: Jalankan kembali dengan PM2..."
     pm2 start server.js --name "whatsapp-gateway"

@@ -79,8 +79,18 @@
                         </div>
                         <h2 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">WhatsApp Gateway Terhubung!</h2>
                         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">Nomor WhatsApp Anda telah berhasil dipasangkan. Sistem siap mengirim dokumen PDF terproteksi secara otomatis.</p>
+                        
+                        <!-- Reset Button -->
+                        <div class="mt-6">
+                            <button id="btn-reset-session" class="inline-flex items-center gap-x-2 rounded-md bg-red-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition duration-150 ease-in-out">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                Putuskan & Reset Koneksi
+                            </button>
+                        </div>
                     </div>
-
+ 
                     <!-- Disconnected View / Scan QR -->
                     <div id="disconnected-panel" class="{{ $status['connected'] ? 'hidden' : '' }} flex flex-col items-center py-6">
                         <div class="text-center mb-6">
@@ -110,12 +120,22 @@
                             </svg>
                             Mendengarkan kode QR baru dari terminal...
                         </p>
+
+                        <!-- Reset Button Disconnected (if session gets stuck) -->
+                        <div class="mt-4">
+                            <button id="btn-reset-session-dc" class="inline-flex items-center gap-x-1.5 text-xs font-semibold text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition duration-150 ease-in-out">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                Reset Sesi yang Macet
+                            </button>
+                        </div>
                     </div>
                 @endif
             </div>
         </div>
     </div>
-
+ 
     <!-- Right Column: Instructions / Guide -->
     <div class="space-y-6">
         <div class="overflow-hidden bg-white dark:bg-slate-800 shadow sm:rounded-lg card">
@@ -141,10 +161,11 @@ node server.js</pre>
         </div>
     </div>
 </div>
-
+ 
 @if($status['active_provider'] === 'selfhosted')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const clientId = 'user-{{ Auth::id() }}';
         // Menggunakan reverse proxy Nginx agar tidak perlu membuka port 3000 ke publik
         let GATEWAY_URL = window.location.origin + '/whatsapp-api';
         
@@ -155,9 +176,9 @@ node server.js</pre>
         const disconnectedPanel = document.getElementById('disconnected-panel');
         const qrImage = document.getElementById('qr-image');
         const qrLoading = document.getElementById('qr-loading');
-
+ 
         function checkGatewayStatus() {
-            fetch(GATEWAY_URL + '/status')
+            fetch(GATEWAY_URL + '/status?clientId=' + clientId)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('HTTP error ' + response.status);
@@ -213,7 +234,49 @@ node server.js</pre>
                     errorMessage.textContent = 'Tidak dapat terhubung ke WhatsApp Gateway di ' + GATEWAY_URL + '. Silakan jalankan "node server.js" di folder "whatsapp-gateway" untuk mengaktifkan.';
                 });
         }
-
+ 
+        // Function to reset session
+        function resetSession() {
+            if (!confirm('Apakah Anda yakin ingin memutuskan koneksi WhatsApp ini? Anda harus memindai QR Code baru lagi.')) {
+                return;
+            }
+            
+            const btn = document.getElementById('btn-reset-session');
+            const btnDc = document.getElementById('btn-reset-session-dc');
+            if (btn) btn.disabled = true;
+            if (btnDc) btnDc.disabled = true;
+ 
+            fetch(GATEWAY_URL + '/reset-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ clientId: clientId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Sesi koneksi WhatsApp berhasil direset. Halaman akan dimuat ulang.');
+                    window.location.reload();
+                } else {
+                    alert('Gagal mereset sesi: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error resetting session:', error);
+                alert('Tidak dapat menghubungi gateway untuk mereset sesi.');
+            })
+            .finally(() => {
+                if (btn) btn.disabled = false;
+                if (btnDc) btnDc.disabled = false;
+            });
+        }
+ 
+        const btnReset = document.getElementById('btn-reset-session');
+        const btnResetDc = document.getElementById('btn-reset-session-dc');
+        if (btnReset) btnReset.addEventListener('click', resetSession);
+        if (btnResetDc) btnResetDc.addEventListener('click', resetSession);
+ 
         // Poll status every 3 seconds
         checkGatewayStatus();
         setInterval(checkGatewayStatus, 3000);
