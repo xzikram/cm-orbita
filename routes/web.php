@@ -30,6 +30,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('dashboard')
         ->middleware('permission:dashboard.view');
 
+    // Profile Settings
+    Route::get('/profile', [\App\Modules\Auth\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile/password', [\App\Modules\Auth\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
     // ── Master Data ──
     Route::prefix('master-data')->name('master-data.')->middleware('permission:doctors.view')->group(function () {
         Route::resource('clinics', \App\Modules\MasterData\Controllers\ClinicController::class)->except('show');
