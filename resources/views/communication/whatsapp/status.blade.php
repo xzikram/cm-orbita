@@ -11,9 +11,9 @@
         </div>
     </div>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    <!-- Left Column: Status Card -->
-    <div class="lg:col-span-2 space-y-6">
+<div class="grid grid-cols-1 gap-6">
+    <!-- Status Card -->
+    <div class="space-y-6">
         <div class="overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm sm:rounded-2xl ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06] border-t-4 border-emerald-500">
             <div class="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
                 <div>
@@ -135,31 +135,7 @@
             </div>
         </div>
     </div>
- 
-    <!-- Right Column: Instructions / Guide -->
-    <div class="space-y-6">
-        <div class="overflow-hidden bg-white dark:bg-slate-800 shadow sm:rounded-lg card">
-            <div class="px-4 py-5 sm:px-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Panduan Penggunaan</h3>
-            </div>
-            <div class="px-4 py-5 sm:p-6 text-sm text-slate-600 dark:text-slate-400 space-y-4">
-                <div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-1">1. Jalankan Gateway</h4>
-                    <p class="text-xs">Pastikan terminal backend Node.js berjalan di folder proyek Anda dengan perintah:</p>
-                    <pre class="mt-1 bg-slate-950 text-slate-100 p-2 rounded text-xs select-all">cd whatsapp-gateway
-node server.js</pre>
-                </div>
-                <div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-1">2. Pindai Sekali Saja</h4>
-                    <p class="text-xs">Sesi masuk akan disimpan di folder lokal. Anda tidak perlu memindai QR Code setiap kali server dinyalakan ulang.</p>
-                </div>
-                <div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-1">3. Keamanan</h4>
-                    <p class="text-xs">Data sesi disimpan dengan aman secara lokal pada komputer Anda. Pastikan tidak menghapus folder `.wwebjs_auth` agar sesi tidak keluar secara tiba-tiba.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
  
 @if($status['active_provider'] === 'selfhosted')
