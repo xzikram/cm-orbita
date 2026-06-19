@@ -104,14 +104,14 @@
                         <div>
                             <label for="email" class="block text-sm font-semibold leading-6 text-slate-700">Email</label>
                             <div class="mt-2">
-                                <input id="email" name="email" type="email" autocomplete="email" required value="{{ old('email', 'superadmin@cfms.test') }}" class="input-field">
+                                <input id="email" name="email" type="email" autocomplete="email" required value="{{ old('email') }}" class="input-field">
                             </div>
                         </div>
 
                         <div>
                             <label for="password" class="block text-sm font-semibold leading-6 text-slate-700">Password</label>
                             <div class="mt-2">
-                                <input id="password" name="password" type="password" autocomplete="current-password" required value="password" class="input-field">
+                                <input id="password" name="password" type="password" autocomplete="current-password" required class="input-field">
                             </div>
                         </div>
 
@@ -129,31 +129,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-
-                <div class="mt-10 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200/80 shadow-sm">
-                    <p class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Demo Accounts</p>
-                    <div class="space-y-2 text-xs text-slate-500">
-                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white transition-colors">
-                            <span class="font-semibold text-slate-700">Super Admin</span>
-                            <code class="bg-white px-2 py-0.5 rounded-md text-[11px] ring-1 ring-slate-200">superadmin@cfms.test</code>
-                        </div>
-                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white transition-colors">
-                            <span class="font-semibold text-slate-700">Dokter</span>
-                            <code class="bg-white px-2 py-0.5 rounded-md text-[11px] ring-1 ring-slate-200">dokter@cfms.test</code>
-                        </div>
-                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white transition-colors">
-                            <span class="font-semibold text-slate-700">Medical Asst</span>
-                            <code class="bg-white px-2 py-0.5 rounded-md text-[11px] ring-1 ring-slate-200">medass@cfms.test</code>
-                        </div>
-                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white transition-colors">
-                            <span class="font-semibold text-slate-700">RO</span>
-                            <code class="bg-white px-2 py-0.5 rounded-md text-[11px] ring-1 ring-slate-200">ro@cfms.test</code>
-                        </div>
-                        <div class="pt-2 border-t border-slate-200 mt-2">
-                            <span class="text-slate-400">Password:</span> <code class="bg-white px-2 py-0.5 rounded-md text-[11px] ring-1 ring-slate-200 font-mono">password</code>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
