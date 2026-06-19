@@ -39,11 +39,12 @@ class UserController extends Controller
             }
         }
 
-        // Search by name/email/phone
+        // Search by name/email/phone/nik
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
                   ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('nik', 'LIKE', "%{$search}%")
                   ->orWhere('phone', 'LIKE', "%{$search}%");
             });
         }
@@ -76,6 +77,7 @@ class UserController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
+            'nik' => 'nullable|string|max:50|unique:users,nik',
             'phone' => 'nullable|string|max:20',
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => 'required|string|exists:roles,name',
@@ -98,6 +100,7 @@ class UserController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'nik' => $validated['nik'] ?? null,
             'phone' => $validated['phone'] ?? null,
             'password' => Hash::make($validated['password']),
             'clinic_id' => $clinicId,
@@ -109,6 +112,7 @@ class UserController extends Controller
         $this->auditLogService->logCreated('User', $user->id, [
             'name' => $user->name,
             'email' => $user->email,
+            'nik' => $user->nik,
             'clinic_id' => $user->clinic_id,
             'role' => $validated['role'],
             'is_active' => $user->is_active,
@@ -145,6 +149,7 @@ class UserController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'nik' => 'nullable|string|max:50|unique:users,nik,' . $user->id,
             'phone' => 'nullable|string|max:20',
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'role' => 'required|string|exists:roles,name',
@@ -176,6 +181,7 @@ class UserController extends Controller
         $oldValues = [
             'name' => $user->name,
             'email' => $user->email,
+            'nik' => $user->nik,
             'phone' => $user->phone,
             'clinic_id' => $user->clinic_id,
             'role' => $user->roles->first()?->name,
@@ -184,6 +190,7 @@ class UserController extends Controller
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
+        $user->nik = $validated['nik'] ?? null;
         $user->phone = $validated['phone'] ?? null;
         $user->clinic_id = $clinicId;
         $user->is_active = $request->boolean('is_active', true);
@@ -200,6 +207,7 @@ class UserController extends Controller
         $this->auditLogService->logUpdated('User', $user->id, $oldValues, [
             'name' => $user->name,
             'email' => $user->email,
+            'nik' => $user->nik,
             'clinic_id' => $user->clinic_id,
             'role' => $validated['role'],
             'is_active' => $user->is_active,

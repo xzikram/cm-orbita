@@ -27,15 +27,17 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'identity' => 'required|string',
             'password' => 'required|string|min:6',
         ]);
 
+        $identity = $request->input('identity');
+
         // Check if locked out
-        if (LoginAttempt::isLockedOut($request->email, $request->ip())) {
+        if (LoginAttempt::isLockedOut($identity, $request->ip())) {
             $lockoutMinutes = config('cfms.security.lockout_minutes', 15);
             throw ValidationException::withMessages([
-                'email' => "Terlalu banyak percobaan login. Silakan coba lagi dalam {$lockoutMinutes} menit.",
+                'identity' => "Terlalu banyak percobaan login. Silakan coba lagi dalam {$lockoutMinutes} menit.",
             ]);
         }
 
@@ -43,11 +45,19 @@ class LoginController extends Controller
         $key = 'login:' . $request->ip();
         if (RateLimiter::tooManyAttempts($key, 10)) {
             throw ValidationException::withMessages([
-                'email' => 'Terlalu banyak percobaan. Silakan coba lagi nanti.',
+                'identity' => 'Terlalu banyak percobaan. Silakan coba lagi nanti.',
             ]);
         }
 
-        if (Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        // Determine if email or NIK
+        $fieldType = filter_var($identity, FILTER_VALIDATE_EMAIL) ? 'email' : 'nik';
+
+        $credentials = [
+            $fieldType => $identity,
+            'password' => $request->input('password'),
+        ];
+
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();
@@ -56,7 +66,7 @@ class LoginController extends Controller
             if (!$user->is_active) {
                 Auth::logout();
                 throw ValidationException::withMessages([
-                    'email' => 'Akun Anda telah dinonaktifkan. Hubungi administrator.',
+                    'identity' => 'Akun Anda telah dinonaktifkan. Hubungi administrator.',
                 ]);
             }
 
@@ -68,13 +78,13 @@ class LoginController extends Controller
 
             // Log successful login
             LoginAttempt::create([
-                'email' => $request->email,
+                'email' => $identity,
                 'ip_address' => $request->ip(),
                 'successful' => true,
                 'user_agent' => $request->userAgent(),
             ]);
 
-            LoginAttempt::clearFor($request->email, $request->ip());
+            LoginAttempt::clearFor($identity, $request->ip());
             RateLimiter::clear($key);
 
             $this->auditLogService->logLogin($user->id);
@@ -84,7 +94,7 @@ class LoginController extends Controller
 
         // Log failed attempt
         LoginAttempt::create([
-            'email' => $request->email,
+            'email' => $identity,
             'ip_address' => $request->ip(),
             'successful' => false,
             'user_agent' => $request->userAgent(),
@@ -93,7 +103,7 @@ class LoginController extends Controller
         RateLimiter::hit($key, 60);
 
         throw ValidationException::withMessages([
-            'email' => 'Email atau password salah.',
+            'identity' => 'Email / NIK atau password salah.',
         ]);
     }
 

@@ -102,16 +102,16 @@
                         @endif
 
                         <div>
-                            <label for="email" class="block text-sm font-semibold leading-6 text-slate-700">Email</label>
+                            <label for="identity" class="block text-sm font-semibold leading-6 text-slate-700">Email / NIK</label>
                             <div class="mt-2">
-                                <input id="email" name="email" type="email" autocomplete="email" required value="{{ old('email') }}" class="input-field">
+                                <input id="identity" name="identity" type="text" autocomplete="username" required value="{{ old('identity') }}" class="input-field" placeholder="Email atau NIK">
                             </div>
                         </div>
 
                         <div>
                             <label for="password" class="block text-sm font-semibold leading-6 text-slate-700">Password</label>
                             <div class="mt-2">
-                                <input id="password" name="password" type="password" autocomplete="current-password" required class="input-field">
+                                <input id="password" name="password" type="password" autocomplete="current-password" required class="input-field" placeholder="••••••••">
                             </div>
                         </div>
 

@@ -26,7 +26,7 @@
         <form action="{{ route('administration.users.index') }}" method="GET" class="flex flex-col sm:flex-row gap-4 items-end">
             <div class="flex-1 w-full">
                 <label for="search" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Pencarian</label>
-                <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Cari nama, email, atau telepon..." class="input-field">
+                <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Cari nama, email, NIK, atau telepon..." class="input-field">
             </div>
 
             @if($isSuperAdmin)
@@ -92,7 +92,12 @@
                                             <span class="inline-flex items-center rounded-md bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 text-[10px] font-bold text-primary-700 dark:text-primary-400">Anda</span>
                                         @endif
                                     </div>
-                                    <div class="text-xs text-slate-400 font-mono">{{ $user->email }}</div>
+                                    <div class="text-xs text-slate-400 font-mono">
+                                        {{ $user->email }}
+                                        @if($user->nik)
+                                            <span class="text-slate-300 dark:text-slate-600">|</span> NIK: {{ $user->nik }}
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </td>
