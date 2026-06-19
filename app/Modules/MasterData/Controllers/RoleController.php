@@ -188,6 +188,14 @@ class RoleController extends Controller
                 'reminders.send' => 'Kirim Reminder',
                 'reminders.manage' => 'Kelola Reminder',
             ],
+            'Komunikasi' => [
+                'communication.deliveries.manage' => 'Kelola Pengiriman Dokumen',
+                'communication.whatsapp.manage' => 'Kelola WhatsApp Gateway',
+                'communication.email-templates.manage' => 'Kelola Template Email',
+                'communication.whatsapp-templates.manage' => 'Kelola Template WA',
+                'communication.document-types.manage' => 'Kelola Tipe Dokumen',
+                'communication.email-accounts.manage' => 'Kelola Email SMTP',
+            ],
             'Administration' => [
                 'audit.view' => 'Lihat Audit Log',
                 'settings.manage' => 'Kelola Pengaturan',
