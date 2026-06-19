@@ -23,6 +23,8 @@ composer install --no-dev --optimize-autoloader --no-interaction
 # 4. Jalankan migrasi database & seeding
 echo "👉 Menjalankan migrasi database..."
 php artisan migrate --force
+echo "👉 Menjalankan seeder role & permission..."
+php artisan db:seed --class=RolePermissionSeeder --force
 echo "👉 Menjalankan seeder data master..."
 php artisan db:seed --class=MasterDataSeeder --force
 

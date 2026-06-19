@@ -90,7 +90,11 @@ class DocumentDeliveryTest extends TestCase
         
         $this->app->instance(WhatsAppProviderInterface::class, $mockProvider);
 
-        // 2. Act as the authenticated user
+        // 2. Assign permission to the user
+        \Spatie\Permission\Models\Permission::findOrCreate('communication.deliveries.manage', 'web');
+        $this->user->givePermissionTo('communication.deliveries.manage');
+
+        // 3. Act as the authenticated user
         $this->actingAs($this->user);
 
         // 3. Create a real valid PDF using TCPDF

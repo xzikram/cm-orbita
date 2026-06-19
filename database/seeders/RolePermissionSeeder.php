@@ -40,6 +40,14 @@ class RolePermissionSeeder extends Seeder
             // Reminders
             'reminders.view', 'reminders.send', 'reminders.manage',
 
+            // Communication
+            'communication.deliveries.manage',
+            'communication.whatsapp.manage',
+            'communication.email-templates.manage',
+            'communication.whatsapp-templates.manage',
+            'communication.document-types.manage',
+            'communication.email-accounts.manage',
+
             // Audit
             'audit.view',
 
@@ -78,6 +86,12 @@ class RolePermissionSeeder extends Seeder
             'examinations.view', 'examinations.create', 'examinations.edit',
             'follow-up.view', 'follow-up.create', 'follow-up.edit', 'follow-up.record-visit',
             'reminders.view', 'reminders.send', 'reminders.manage',
+            'communication.deliveries.manage',
+            'communication.whatsapp.manage',
+            'communication.email-templates.manage',
+            'communication.whatsapp-templates.manage',
+            'communication.document-types.manage',
+            'communication.email-accounts.manage',
             'audit.view',
             'settings.manage',
         ]);

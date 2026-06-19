@@ -172,6 +172,14 @@
             </li>
 
             <!-- Communication Center Section -->
+            @if(Auth::user()->hasAnyPermission([
+                'communication.deliveries.manage',
+                'communication.whatsapp.manage',
+                'communication.email-templates.manage',
+                'communication.whatsapp-templates.manage',
+                'communication.document-types.manage',
+                'communication.email-accounts.manage'
+            ]))
             <li>
                 <div class="flex items-center gap-x-2 px-1 mb-2">
                     <div class="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-700 to-transparent"></div>
@@ -179,6 +187,7 @@
                     <div class="h-px flex-1 bg-gradient-to-l from-slate-200 dark:from-slate-700 to-transparent"></div>
                 </div>
                 <ul role="list" class="-mx-2 space-y-0.5">
+                    @can('communication.deliveries.manage')
                     @php $active = request()->routeIs('communication.deliveries.*'); @endphp
                     <li>
                         <a href="{{ route('communication.deliveries.index') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
@@ -191,7 +200,9 @@
                             Pengiriman Dokumen
                         </a>
                     </li>
+                    @endcan
 
+                    @can('communication.whatsapp.manage')
                     @php $active = request()->routeIs('communication.whatsapp.status'); @endphp
                     <li>
                         <a href="{{ route('communication.whatsapp.status') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
@@ -204,7 +215,9 @@
                             WhatsApp Gateway
                         </a>
                     </li>
+                    @endcan
 
+                    @can('communication.email-templates.manage')
                     @php $active = request()->routeIs('communication.email-templates.*'); @endphp
                     <li>
                         <a href="{{ route('communication.email-templates.index') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
@@ -217,7 +230,9 @@
                             Email Templates
                         </a>
                     </li>
+                    @endcan
 
+                    @can('communication.whatsapp-templates.manage')
                     @php $active = request()->routeIs('communication.whatsapp-templates.*'); @endphp
                     <li>
                         <a href="{{ route('communication.whatsapp-templates.index') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
@@ -230,7 +245,9 @@
                             WA Templates
                         </a>
                     </li>
+                    @endcan
 
+                    @can('communication.document-types.manage')
                     @php $active = request()->routeIs('communication.document-types.*'); @endphp
                     <li>
                         <a href="{{ route('communication.document-types.index') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
@@ -243,7 +260,9 @@
                             Tipe Dokumen
                         </a>
                     </li>
+                    @endcan
 
+                    @can('communication.email-accounts.manage')
                     @php $active = request()->routeIs('communication.email-accounts.*'); @endphp
                     <li>
                         <a href="{{ route('communication.email-accounts.index') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
@@ -256,8 +275,10 @@
                             Email SMTP
                         </a>
                     </li>
+                    @endcan
                 </ul>
             </li>
+            @endif
 
             <!-- Master Data Section -->
             @can('doctors.view')

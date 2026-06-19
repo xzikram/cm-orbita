@@ -69,20 +69,30 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Communication Center (CCFP) ──
     Route::prefix('communication')->name('communication.')->group(function () {
-        // We will add specific permissions later, using a general group for now
-        Route::resource('email-accounts', \App\Modules\Communication\Controllers\EmailAccountController::class);
+        Route::resource('email-accounts', \App\Modules\Communication\Controllers\EmailAccountController::class)
+            ->middleware('permission:communication.email-accounts.manage');
         
-        Route::post('email-templates/delete-all', [\App\Modules\Communication\Controllers\EmailTemplateController::class, 'deleteAll'])->name('email-templates.deleteAll');
-        Route::resource('email-templates', \App\Modules\Communication\Controllers\EmailTemplateController::class);
+        Route::middleware('permission:communication.email-templates.manage')->group(function () {
+            Route::post('email-templates/delete-all', [\App\Modules\Communication\Controllers\EmailTemplateController::class, 'deleteAll'])->name('email-templates.deleteAll');
+            Route::resource('email-templates', \App\Modules\Communication\Controllers\EmailTemplateController::class);
+        });
         
-        Route::resource('whatsapp-templates', \App\Modules\Communication\Controllers\WhatsAppTemplateController::class);
+        Route::resource('whatsapp-templates', \App\Modules\Communication\Controllers\WhatsAppTemplateController::class)
+            ->middleware('permission:communication.whatsapp-templates.manage');
         
-        Route::post('document-types/delete-all', [\App\Modules\Communication\Controllers\DocumentTypeController::class, 'deleteAll'])->name('document-types.deleteAll');
-        Route::resource('document-types', \App\Modules\Communication\Controllers\DocumentTypeController::class);
+        Route::middleware('permission:communication.document-types.manage')->group(function () {
+            Route::post('document-types/delete-all', [\App\Modules\Communication\Controllers\DocumentTypeController::class, 'deleteAll'])->name('document-types.deleteAll');
+            Route::resource('document-types', \App\Modules\Communication\Controllers\DocumentTypeController::class);
+        });
         
-        Route::get('whatsapp/status', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'whatsappStatus'])->name('whatsapp.status');
-        Route::post('deliveries/{delivery}/mark-as-sent', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'markAsSent'])->name('deliveries.markAsSent');
-        Route::resource('deliveries', \App\Modules\Communication\Controllers\DocumentDeliveryController::class)->only(['index', 'create', 'store', 'show']);
+        Route::get('whatsapp/status', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'whatsappStatus'])
+            ->name('whatsapp.status')
+            ->middleware('permission:communication.whatsapp.manage');
+        
+        Route::middleware('permission:communication.deliveries.manage')->group(function () {
+            Route::post('deliveries/{delivery}/mark-as-sent', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'markAsSent'])->name('deliveries.markAsSent');
+            Route::resource('deliveries', \App\Modules\Communication\Controllers\DocumentDeliveryController::class)->only(['index', 'create', 'store', 'show']);
+        });
     });
 
     // ── Document Processing Center (DPC) ──
