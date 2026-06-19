@@ -32,9 +32,9 @@
 
                 <!-- NIK -->
                 <div>
-                    <label for="nik" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">NIK (Nomor Induk Kependudukan)</label>
+                    <label for="nik" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">NIK Karyawan</label>
                     <div class="mt-2">
-                        <input type="text" name="nik" id="nik" value="{{ old('nik') }}" class="input-field" placeholder="Contoh: 3173123456780001">
+                        <input type="text" name="nik" id="nik" value="{{ old('nik') }}" class="input-field" placeholder="Contoh: 21378">
                     </div>
                     @error('nik')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>

@@ -36,13 +36,10 @@
             <div class="card p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 flex flex-col items-center text-center">
                 <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="h-24 w-24 rounded-3xl ring-4 ring-primary-500/10 object-cover shadow-md mb-4">
                 <h3 class="text-base font-extrabold text-slate-900 dark:text-white truncate max-w-full">{{ $user->name }}</h3>
-                <span class="inline-flex items-center rounded-full bg-primary-50 dark:bg-primary-900/30 px-2.5 py-1 text-xs font-semibold text-primary-700 dark:text-primary-400 mt-1.5 ring-1 ring-inset ring-primary-700/10">
-                    {{ $user->roles->first() ? ucwords(str_replace('-', ' ', $user->roles->first()->name)) : 'Pengguna' }}
-                </span>
                 
                 <div class="w-full border-t border-slate-100 dark:border-slate-700/50 mt-6 pt-6 space-y-3.5 text-left text-xs">
                     <div>
-                        <span class="block text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mb-1">NIK</span>
+                        <span class="block text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mb-1">NIK Karyawan</span>
                         <span class="font-mono text-slate-800 dark:text-slate-200 font-medium">{{ $user->nik ?? '-' }}</span>
                     </div>
                     <div>
