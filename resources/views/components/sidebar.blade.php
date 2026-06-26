@@ -2,11 +2,8 @@
     <!-- Corporate Header/Logo Section -->
     <div class="flex h-20 shrink-0 items-center px-2 mb-1">
         <div class="flex items-center gap-x-3.5">
-            <div class="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-500/30 text-white font-bold ring-2 ring-primary-400/20">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+            <div class="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 shadow-md ring-2 ring-slate-100 dark:ring-slate-800 overflow-hidden p-1">
+                <img src="{{ asset('Logo RS JEC ORBITA.png') }}" class="max-h-full max-w-full object-contain" alt="JEC ORBITA Logo">
                 <div class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900"></div>
             </div>
             <div>

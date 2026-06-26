@@ -23,11 +23,8 @@
             <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-400/10 blur-3xl animate-pulse-soft"></div>
 
             <div class="relative z-10 flex flex-col justify-center items-center w-full px-12 text-white">
-                <div class="p-5 bg-white/10 backdrop-blur-md rounded-3xl mb-8 ring-1 ring-white/20 shadow-2xl shadow-black/10">
-                    <svg class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                <div class="p-4 bg-white rounded-3xl mb-8 shadow-2xl shadow-black/15 w-24 h-24 flex items-center justify-center ring-4 ring-white/10">
+                    <img src="{{ asset('Logo RS JEC ORBITA.png') }}" class="max-h-full max-w-full object-contain" alt="JEC ORBITA Logo">
                 </div>
                 <h1 class="text-5xl font-extrabold tracking-tight mb-3">CFMS</h1>
                 <p class="text-xl font-light text-white/80 mb-1">Clinical Follow-Up</p>
@@ -59,11 +56,8 @@
             <div class="mx-auto w-full max-w-sm">
                 <div class="lg:hidden flex justify-center mb-8">
                     <div class="flex items-center gap-x-3">
-                        <div class="p-2.5 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl shadow-lg shadow-primary-500/20">
-                            <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                        <div class="p-2 bg-white rounded-xl shadow-md w-12 h-12 flex items-center justify-center border border-slate-100">
+                            <img src="{{ asset('Logo RS JEC ORBITA.png') }}" class="max-h-full max-w-full object-contain" alt="JEC ORBITA Logo">
                         </div>
                         <span class="text-2xl font-extrabold text-slate-900">CFMS</span>
                     </div>
