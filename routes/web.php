@@ -36,6 +36,7 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Master Data ──
     Route::prefix('master-data')->name('master-data.')->middleware('permission:doctors.view')->group(function () {
+        Route::post('doctors/delete-all', [DoctorController::class, 'deleteAll'])->name('doctors.deleteAll');
         Route::resource('clinics', \App\Modules\MasterData\Controllers\ClinicController::class)->except('show');
         Route::resource('doctors', DoctorController::class)->except('show');
     });
@@ -43,6 +44,9 @@ Route::middleware(['auth'])->group(function () {
     // ── Follow-Up Module ──
     Route::prefix('follow-up')->name('follow-up.')->group(function () {
         // Patients
+        Route::post('patients/delete-all', [PatientController::class, 'deleteAll'])
+            ->name('patients.deleteAll')
+            ->middleware('permission:patients.view');
         Route::resource('patients', PatientController::class)
             ->middleware('permission:patients.view');
 

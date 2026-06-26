@@ -11,11 +11,35 @@
                 <h1 class="page-header-title">Daftar Pasien</h1>
                 <p class="page-header-desc">Daftar seluruh pasien yang terdaftar di klinik beserta riwayat pemeriksaan dan kontrol mereka.</p>
             </div>
-            <div class="mt-4 sm:mt-0 sm:flex-none">
+            <div class="mt-4 sm:mt-0 sm:flex-none flex items-center gap-3" x-data="{ open: false, password: '' }">
+                @if($patients->total() > 0)
+                    <button @click="open = true; password = ''" class="btn-danger">
+                        Hapus Semua
+                    </button>
+                @endif
                 <a href="{{ route('follow-up.patients.create') }}" class="btn-primary">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     Tambah Pasien
                 </a>
+
+                <!-- Modal Konfirmasi Hapus Semua -->
+                <div x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md" x-cloak>
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-slate-200 dark:border-slate-800" @click.outside="open = false">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Hapus Semua Pasien?</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Tindakan ini akan menghapus seluruh data master pasien beserta data pemeriksaan dan kunjungan kontrol terkait secara permanen. Masukkan password konfirmasi untuk melanjutkan.</p>
+                        
+                        <input type="password" x-model="password" class="input-field mb-4" placeholder="Masukkan password konfirmasi...">
+                        
+                        <div class="flex justify-end gap-3">
+                            <button @click="open = false; password = ''" type="button" class="btn-secondary">Batal</button>
+                            <form action="{{ route('follow-up.patients.deleteAll') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="confirm_password" :value="password">
+                                <button type="submit" class="btn-danger" :disabled="password !== 'Ikr@21983'">Hapus Semua</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

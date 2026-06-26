@@ -160,4 +160,37 @@ class PatientController extends Controller
         return redirect()->route('follow-up.patients.index')
             ->with('success', 'Pasien berhasil dihapus.');
     }
+
+    public function deleteAll(Request $request)
+    {
+        $request->validate([
+            'confirm_password' => 'required|string',
+        ]);
+
+        if ($request->input('confirm_password') !== 'Ikr@21983') {
+            return redirect()->back()->with('error', 'Password konfirmasi salah.');
+        }
+
+        $clinicId = Auth::user()->clinic_id;
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($clinicId) {
+                // Hapus pengingat & log pengingat terkait klinik ini
+                $reminderIds = \App\Models\Reminder::where('clinic_id', $clinicId)->pluck('id');
+                \App\Models\ReminderLog::whereIn('reminder_id', $reminderIds)->delete();
+                \App\Models\Reminder::where('clinic_id', $clinicId)->delete();
+
+                // Force delete patients (akan men-trigger database ON DELETE CASCADE untuk:
+                // examinations, follow_up_schedules, follow_up_visits, document_deliveries, processed_documents)
+                \App\Models\Patient::where('clinic_id', $clinicId)->forceDelete();
+            });
+
+            $this->auditLogService->logDeleted('Patient', null, ['description' => 'Menghapus seluruh master data pasien dan data transaksi terkait.']);
+
+            return redirect()->route('follow-up.patients.index')
+                ->with('success', 'Semua data pasien dan transaksi terkait berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
+    }
 }

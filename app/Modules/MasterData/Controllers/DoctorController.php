@@ -103,8 +103,45 @@ class DoctorController extends Controller
 
         $this->auditLogService->logDeleted('Doctor', $doctor->id, $oldValues);
 
-        return redirect()->route('master.doctors.index')
+        return redirect()->route('master-data.doctors.index')
             ->with('success', 'Dokter berhasil dihapus.');
+    }
+
+    public function deleteAll(Request $request)
+    {
+        $request->validate([
+            'confirm_password' => 'required|string',
+        ]);
+
+        if ($request->input('confirm_password') !== 'Ikr@21983') {
+            return redirect()->back()->with('error', 'Password konfirmasi salah.');
+        }
+
+        $clinicId = Auth::user()->clinic_id;
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($clinicId) {
+                $doctors = Doctor::where('clinic_id', $clinicId)->get();
+                foreach ($doctors as $doctor) {
+                    $user = $doctor->user;
+                    
+                    // Force delete dokter (akan men-trigger cascade delete untuk examinations)
+                    $doctor->forceDelete();
+                    
+                    // Hapus user terkait jika memiliki role 'dokter'
+                    if ($user && $user->hasRole('dokter')) {
+                        $user->delete();
+                    }
+                }
+            });
+
+            $this->auditLogService->logDeleted('Doctor', null, ['description' => 'Menghapus seluruh master data dokter dan akun user dokter terkait.']);
+
+            return redirect()->route('master-data.doctors.index')
+                ->with('success', 'Semua data dokter berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
     }
 
     protected function authorizeClinic(Doctor $doctor): void
