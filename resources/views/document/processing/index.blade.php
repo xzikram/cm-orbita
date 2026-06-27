@@ -14,7 +14,7 @@
                 @if($documents->total() > 0)
                     <form action="{{ route('dpc.processing.deleteAll') }}" method="POST" onsubmit="return confirm('Hapus semua data dokumen?');">
                         @csrf
-                        <button type="submit" class="btn-danger">Hapus Semua</button>
+                        <button type="submit" class="btn-danger" @if(!auth()->user()->hasAnyRole(['super-admin', 'admin-klinik'])) disabled style="opacity: 0.5; cursor: not-allowed;" title="Hanya Admin yang dapat menghapus" @endif>Hapus Semua</button>
                     </form>
                 @endif
                 <a href="{{ route('dpc.processing.create') }}" class="btn-primary">
@@ -55,7 +55,7 @@
                                 <a href="{{ route('dpc.processing.show', $doc) }}" class="table-action-primary">Lihat / Kirim</a>
                                 <form action="{{ route('dpc.processing.destroy', $doc) }}" method="POST" onsubmit="return confirm('Hapus dokumen ini?');" class="inline">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="table-action-danger">Hapus</button>
+                                    <button type="submit" class="table-action-danger" @if(!auth()->user()->hasAnyRole(['super-admin', 'admin-klinik'])) disabled style="opacity: 0.5; cursor: not-allowed;" title="Hanya Admin yang dapat menghapus" @endif>Hapus</button>
                                 </form>
                             </div>
                         </td>

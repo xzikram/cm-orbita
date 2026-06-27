@@ -73,6 +73,7 @@ class DocumentProcessingController extends Controller
 
     public function destroy(ProcessedDocument $processing)
     {
+        abort_unless(Auth::user()->hasAnyRole(['super-admin', 'admin-klinik']), 403, 'Unauthorized action.');
         abort_if($processing->clinic_id !== Auth::user()->clinic_id, 403);
 
         // Delete original and generated files from disk
@@ -91,6 +92,7 @@ class DocumentProcessingController extends Controller
 
     public function deleteAll()
     {
+        abort_unless(Auth::user()->hasAnyRole(['super-admin', 'admin-klinik']), 403, 'Unauthorized action.');
         $clinicId = Auth::user()->clinic_id;
         $documents = ProcessedDocument::where('clinic_id', $clinicId)->get();
 
