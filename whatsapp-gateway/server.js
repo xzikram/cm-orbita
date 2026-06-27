@@ -28,6 +28,11 @@ function getOrCreateClient(clientId) {
         return clientData;
     }
 
+    return createNewClient(clientId);
+}
+
+// Function to create a fresh client instance and setup listeners
+function createNewClient(clientId) {
     console.log(`[Manager] Membuat client baru untuk clientId: ${clientId}`);
     
     const client = new Client({
@@ -84,11 +89,11 @@ function getOrCreateClient(clientId) {
         console.log(`[${clientId}] Menunggu 5 detik sebelum menginisialisasi ulang...`);
         setTimeout(() => {
             if (!clients.has(clientId)) return; // Client might have been deleted/reset
-            clientData.reconnecting = false;
-            console.log(`[${clientId}] Menginisialisasi ulang WhatsApp Client...`);
-            client.initialize().catch(err => {
-                console.error(`[${clientId}] Gagal menginisialisasi ulang client:`, err.message);
-            });
+            
+            console.log(`[${clientId}] Memulai inisialisasi ulang WhatsApp Client dengan instance baru...`);
+            clients.delete(clientId);
+            const newClientData = createNewClient(clientId);
+            newClientData.reconnecting = false;
         }, 5000);
     }
 
@@ -122,6 +127,18 @@ function getOrCreateClient(clientId) {
         console.error(`[${clientId}] Gagal autentikasi WhatsApp:`, msg);
         clientData.latestQrDataUrl = null;
         clientData.isReady = false;
+        
+        // Hapus folder sesi jika autentikasi gagal secara permanen agar user bisa scan ulang
+        const sessionDir = path.join(__dirname, '.wwebjs_auth', `session-${clientId}`);
+        try {
+            if (fs.existsSync(sessionDir)) {
+                fs.rmSync(sessionDir, { recursive: true, force: true });
+                console.log(`[${clientId}] Folder sesi dibersihkan karena gagal autentikasi.`);
+            }
+        } catch (err) {
+            console.error(`[${clientId}] Gagal menghapus folder sesi:`, err.message);
+        }
+
         handleDisconnect('Authentication failure');
     });
 
@@ -173,6 +190,23 @@ function loadExistingSessions() {
 // Trigger loading saved sessions
 loadExistingSessions();
 
+// Helper to trigger recreation from heartbeat
+async function recreateClientFromHeartbeat(clientId, clientData) {
+    clientData.isReady = false;
+    clientData.latestQrDataUrl = null;
+    clientData.reconnecting = true;
+    try {
+        await clientData.client.destroy();
+    } catch (e) {}
+
+    setTimeout(() => {
+        if (!clients.has(clientId)) return;
+        clients.delete(clientId);
+        const newClientData = createNewClient(clientId);
+        newClientData.reconnecting = false;
+    }, 5000);
+}
+
 // Heartbeat check for all ready clients every 30 seconds
 setInterval(async () => {
     for (const [clientId, clientData] of clients.entries()) {
@@ -181,30 +215,12 @@ setInterval(async () => {
                 const state = await clientData.client.getState();
                 console.log(`[Heartbeat - ${clientId}] Status: ${state}`);
                 if (state !== 'CONNECTED') {
-                    console.warn(`[Heartbeat - ${clientId}] Status tidak CONNECTED. Memicu re-koneksi...`);
-                    clientData.isReady = false;
-                    clientData.latestQrDataUrl = null;
-                    clientData.reconnecting = true;
-                    clientData.client.destroy().catch(() => {}).then(() => {
-                        setTimeout(() => {
-                            if (!clients.has(clientId)) return;
-                            clientData.reconnecting = false;
-                            clientData.client.initialize().catch(() => {});
-                        }, 5000);
-                    });
+                    console.warn(`[Heartbeat - ${clientId}] Status tidak CONNECTED (${state}). Memicu re-koneksi...`);
+                    await recreateClientFromHeartbeat(clientId, clientData);
                 }
             } catch (error) {
                 console.error(`[Heartbeat - ${clientId}] Gagal mendapatkan state client:`, error.message);
-                clientData.isReady = false;
-                clientData.latestQrDataUrl = null;
-                clientData.reconnecting = true;
-                clientData.client.destroy().catch(() => {}).then(() => {
-                    setTimeout(() => {
-                        if (!clients.has(clientId)) return;
-                        clientData.reconnecting = false;
-                        clientData.client.initialize().catch(() => {});
-                    }, 5000);
-                });
+                await recreateClientFromHeartbeat(clientId, clientData);
             }
         }
     }
