@@ -96,6 +96,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('whatsapp/status', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'whatsappStatus'])
             ->name('whatsapp.status')
             ->middleware('permission:communication.whatsapp.manage');
+
+        Route::get('whatsapp/check-connection', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'checkWhatsAppConnection'])
+            ->name('whatsapp.checkConnection');
         
         Route::middleware('permission:communication.deliveries.manage')->group(function () {
             Route::post('deliveries/{delivery}/mark-as-sent', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'markAsSent'])->name('deliveries.markAsSent');

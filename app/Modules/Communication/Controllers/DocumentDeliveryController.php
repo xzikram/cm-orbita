@@ -227,4 +227,21 @@ class DocumentDeliveryController extends Controller
         
         return view('communication.whatsapp.status', compact('status'));
     }
+
+    public function checkWhatsAppConnection()
+    {
+        $provider = app(\App\Modules\Reminder\Contracts\WhatsAppProviderInterface::class);
+        $connected = false;
+        
+        if ($provider->getProviderName() === 'selfhosted') {
+            $connected = \Illuminate\Support\Facades\Cache::remember('wa_connected_' . Auth::id(), 10, function () use ($provider) {
+                return $provider->checkStatus();
+            });
+        }
+        
+        return response()->json([
+            'connected' => $connected,
+            'url' => route('communication.whatsapp.status')
+        ]);
+    }
 }

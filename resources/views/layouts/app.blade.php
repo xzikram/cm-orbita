@@ -144,7 +144,46 @@
 
                 </div>
             </main>
-        </div>
+    </div>
+
+    <!-- WhatsApp Floating Status Indicator -->
+    <div x-data="{ connected: null, url: '', check() {
+            fetch('{{ route('communication.whatsapp.checkConnection') }}')
+                .then(r => r.json())
+                .then(data => {
+                    this.connected = data.connected;
+                    this.url = data.url;
+                });
+         } }" 
+         x-init="check(); setInterval(() => check(), 30000)" 
+         class="fixed bottom-6 right-6 z-50 transition-all duration-300"
+         x-show="connected !== null"
+         x-cloak>
+        
+        <!-- Connected State (Green) -->
+        <template x-if="connected === true">
+            <div class="flex items-center gap-2 bg-emerald-500/90 dark:bg-emerald-600/95 backdrop-blur-md px-4 py-2.5 rounded-full shadow-lg shadow-emerald-500/25 border border-emerald-400/20 text-white text-xs font-semibold select-none transition-all duration-300">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                Terhubung ke WhatsApp
+            </div>
+        </template>
+
+        <!-- Disconnected State (Yellow) -->
+        <template x-if="connected === false">
+            <a :href="url" class="flex items-center gap-2 bg-amber-500/90 hover:bg-amber-600/95 dark:bg-amber-600/90 dark:hover:bg-amber-700/95 backdrop-blur-md px-4 py-2.5 rounded-full shadow-lg shadow-amber-500/25 border border-amber-400/20 text-white text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 group">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                Anda belum login WhatsApp, klik untuk login
+                <svg class="h-3 w-3 text-white group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+            </a>
+        </template>
     </div>
 </body>
 </html>
