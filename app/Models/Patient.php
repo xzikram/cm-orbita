@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Patient extends Model
@@ -40,6 +41,23 @@ class Patient extends Model
     public function followUpVisits(): HasMany
     {
         return $this->hasMany(FollowUpVisit::class);
+    }
+
+    public function documentDeliveries(): HasMany
+    {
+        return $this->hasMany(DocumentDelivery::class);
+    }
+
+    public function reminders(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Reminder::class,
+            FollowUpSchedule::class,
+            'patient_id',      // FK on follow_up_schedules
+            'follow_up_schedule_id', // FK on reminders
+            'id',              // local key on patients
+            'id'               // local key on follow_up_schedules
+        );
     }
 
     public function scopeActive($query)

@@ -175,14 +175,35 @@ class PatientController extends Controller
 
         try {
             \Illuminate\Support\Facades\DB::transaction(function () use ($clinicId) {
-                // Hapus pengingat & log pengingat terkait klinik ini
-                $reminderIds = \App\Models\Reminder::where('clinic_id', $clinicId)->pluck('id');
-                \App\Models\ReminderLog::whereIn('reminder_id', $reminderIds)->delete();
-                \App\Models\Reminder::where('clinic_id', $clinicId)->delete();
+                // Disable FK checks to avoid cascade conflicts
+                \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
-                // Force delete patients (akan men-trigger database ON DELETE CASCADE untuk:
-                // examinations, follow_up_schedules, follow_up_visits, document_deliveries, processed_documents)
-                \App\Models\Patient::where('clinic_id', $clinicId)->forceDelete();
+                // 1. Hapus reminder logs terkait klinik ini
+                $reminderIds = \App\Models\Reminder::withTrashed()->where('clinic_id', $clinicId)->pluck('id');
+                if ($reminderIds->isNotEmpty()) {
+                    \App\Models\ReminderLog::whereIn('reminder_id', $reminderIds)->delete();
+                    \App\Models\Reminder::withTrashed()->where('clinic_id', $clinicId)->forceDelete();
+                }
+
+                // 2. Hapus processed documents terkait pasien di klinik ini
+                $patientIds = \App\Models\Patient::withTrashed()->where('clinic_id', $clinicId)->pluck('id');
+                if ($patientIds->isNotEmpty()) {
+                    \App\Models\ProcessedDocument::withTrashed()->whereIn('patient_id', $patientIds)->forceDelete();
+                    \App\Models\DocumentDelivery::whereIn('patient_id', $patientIds)->delete();
+
+                    // 3. Hapus follow-up visits & schedules
+                    \App\Models\FollowUpVisit::withTrashed()->whereIn('patient_id', $patientIds)->forceDelete();
+                    \App\Models\FollowUpSchedule::withTrashed()->whereIn('patient_id', $patientIds)->forceDelete();
+
+                    // 4. Hapus examinations
+                    \App\Models\Examination::withTrashed()->whereIn('patient_id', $patientIds)->forceDelete();
+                }
+
+                // 5. Force delete patients
+                \App\Models\Patient::withTrashed()->where('clinic_id', $clinicId)->forceDelete();
+
+                // Re-enable FK checks
+                \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
             });
 
             $this->auditLogService->logDeleted('Patient', null, ['description' => 'Menghapus seluruh master data pasien dan data transaksi terkait.']);
@@ -190,6 +211,8 @@ class PatientController extends Controller
             return redirect()->route('follow-up.patients.index')
                 ->with('success', 'Semua data pasien dan transaksi terkait berhasil dihapus.');
         } catch (\Exception $e) {
+            // Re-enable FK checks in case of error
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
             return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
     }

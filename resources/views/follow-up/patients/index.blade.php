@@ -35,7 +35,7 @@
                             <form action="{{ route('follow-up.patients.deleteAll') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="confirm_password" :value="password">
-                                <button type="submit" class="btn-danger" :disabled="password !== 'Ikr@21983'">Hapus Semua</button>
+                                <button type="submit" class="btn-danger" :disabled="password.length === 0">Hapus Semua</button>
                             </form>
                         </div>
                     </div>

@@ -121,18 +121,30 @@ class DoctorController extends Controller
 
         try {
             \Illuminate\Support\Facades\DB::transaction(function () use ($clinicId) {
-                $doctors = Doctor::where('clinic_id', $clinicId)->get();
+                // Disable FK checks to avoid cascade conflicts
+                \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
+                $doctors = Doctor::withTrashed()->where('clinic_id', $clinicId)->get();
+                $doctorIds = $doctors->pluck('id');
+
+                if ($doctorIds->isNotEmpty()) {
+                    // Hapus examinations terkait dokter
+                    \App\Models\Examination::withTrashed()->whereIn('doctor_id', $doctorIds)->forceDelete();
+                }
+
+                // Hapus dokter dan user terkait
                 foreach ($doctors as $doctor) {
                     $user = $doctor->user;
                     
-                    // Force delete dokter (akan men-trigger cascade delete untuk examinations)
                     $doctor->forceDelete();
                     
-                    // Hapus user terkait jika memiliki role 'dokter'
                     if ($user && $user->hasRole('dokter')) {
                         $user->delete();
                     }
                 }
+
+                // Re-enable FK checks
+                \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
             });
 
             $this->auditLogService->logDeleted('Doctor', null, ['description' => 'Menghapus seluruh master data dokter dan akun user dokter terkait.']);
@@ -140,6 +152,8 @@ class DoctorController extends Controller
             return redirect()->route('master-data.doctors.index')
                 ->with('success', 'Semua data dokter berhasil dihapus.');
         } catch (\Exception $e) {
+            // Re-enable FK checks in case of error
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
             return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
     }
