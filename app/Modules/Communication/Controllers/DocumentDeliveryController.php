@@ -41,7 +41,14 @@ class DocumentDeliveryController extends Controller
             $processedDoc = \App\Models\ProcessedDocument::find($request->get('processed_document_id'));
         }
 
-        return view('communication.deliveries.create', compact('patients', 'documentTypes', 'templates', 'accounts', 'selectedPatient', 'processedDoc'));
+        // Cek status koneksi WhatsApp Gateway
+        $provider = app(\App\Modules\Reminder\Contracts\WhatsAppProviderInterface::class);
+        $whatsappConnected = true;
+        if ($provider->getProviderName() === 'selfhosted') {
+            $whatsappConnected = $provider->checkStatus();
+        }
+
+        return view('communication.deliveries.create', compact('patients', 'documentTypes', 'templates', 'accounts', 'selectedPatient', 'processedDoc', 'whatsappConnected'));
     }
 
     public function store(Request $request)
@@ -113,6 +120,14 @@ class DocumentDeliveryController extends Controller
             );
         } else {
             $file = $request->file('document_pdf');
+        }
+
+        // Validasi koneksi WhatsApp Gateway jika mengirim lewat WA
+        if ($request->channel === 'whatsapp') {
+            $provider = app(\App\Modules\Reminder\Contracts\WhatsAppProviderInterface::class);
+            if ($provider->getProviderName() === 'selfhosted' && !$provider->checkStatus()) {
+                return back()->withInput()->with('error_html', 'WhatsApp Gateway belum terhubung. Silakan <a href="' . route('communication.whatsapp.status') . '" class="underline font-bold text-red-600 dark:text-red-400 hover:text-red-800">hubungkan WhatsApp Gateway</a> terlebih dahulu agar dapat mengirim pesan.');
+            }
         }
 
         $password = null;

@@ -133,6 +133,23 @@
                         </select>
                     </div>
                     @error('channel')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+
+                    <div id="wa-warning-alert" class="mt-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 p-4 ring-1 ring-amber-500/20 shadow-sm shadow-amber-500/5" style="display: none;">
+                        <div class="flex items-center">
+                            <div class="shrink-0">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-800/40">
+                                    <svg class="h-5 w-5 text-amber-600 dark:text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                                    WhatsApp Gateway belum terhubung. Silakan <a href="{{ route('communication.whatsapp.status') }}" class="underline font-bold text-amber-950 dark:text-amber-100 hover:text-amber-700">hubungkan WhatsApp Gateway</a> terlebih dahulu agar dapat mengirim pesan.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Email Fields Group -->
@@ -389,9 +406,13 @@
         }
     }
 
+    const isWaConnected = {{ $whatsappConnected ? 'true' : 'false' }};
+
     function toggleDeliveryMethod() {
         const channel = channelSelect.value;
         const submitText = document.getElementById('submit-button-text');
+        const waWarningAlert = document.getElementById('wa-warning-alert');
+
         if (channel === 'whatsapp') {
             emailFieldsGroup.style.display = 'none';
             whatsappFieldsGroup.style.display = 'block';
@@ -401,6 +422,12 @@
             recipientEmail.required = false;
             emailAccountId.required = false;
             recipientPhone.required = true;
+
+            if (!isWaConnected) {
+                waWarningAlert.style.display = 'block';
+            } else {
+                waWarningAlert.style.display = 'none';
+            }
         } else {
             emailFieldsGroup.style.display = 'grid';
             whatsappFieldsGroup.style.display = 'none';
@@ -410,6 +437,8 @@
             recipientEmail.required = true;
             emailAccountId.required = true;
             recipientPhone.required = false;
+
+            waWarningAlert.style.display = 'none';
         }
     }
 
