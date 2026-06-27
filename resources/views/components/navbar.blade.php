@@ -14,6 +14,55 @@
         </div>
 
         <div class="flex items-center gap-x-3">
+            <!-- WhatsApp Status Badge -->
+            @auth
+            <div x-data="{
+                    connected: null,
+                    url: '',
+                    check() {
+                        fetch('{{ route('communication.whatsapp.checkConnection') }}', {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                        .then(data => {
+                            this.connected = data.connected;
+                            this.url = data.url;
+                        })
+                        .catch(() => { this.connected = null; });
+                    }
+                 }"
+                 x-init="check(); setInterval(() => check(), 30000)"
+                 class="flex items-center"
+                 x-show="connected !== null"
+                 x-cloak>
+                 
+                <!-- Connected Badge -->
+                <template x-if="connected === true">
+                    <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20 dark:ring-emerald-500/20">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        WhatsApp Terhubung
+                    </span>
+                </template>
+
+                <!-- Disconnected Badge -->
+                <template x-if="connected === false">
+                    <a :href="url" class="inline-flex items-center gap-x-1.5 rounded-full bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-600/20 dark:ring-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-all duration-200 decoration-none no-underline">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        Anda belum login WhatsApp, klik untuk login
+                        <svg class="h-3 w-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </a>
+                </template>
+            </div>
+            @endauth
+
             <!-- Dark Mode Toggle -->
             <button @click="darkMode = !darkMode"
                     class="relative p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
