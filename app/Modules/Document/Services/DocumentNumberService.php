@@ -16,29 +16,28 @@ class DocumentNumberService
     public function generateNumber(?DocumentType $type): string
     {
         return DB::transaction(function () use ($type) {
-            $query = ProcessedDocument::withTrashed();
-            if ($type) {
-                $query->where('document_type_id', $type->id);
-            } else {
-                $query->whereNull('document_type_id');
-            }
+            $year = date('Y');
+            $code = $type ? strtoupper($type->code) : 'GEN';
+            $prefix = "JEC-{$code}-{$year}-";
 
-            // Find the last document, get its sequence
-            $lastDocument = $query->lockForUpdate() // Prevent concurrent generation duplicates
+            // Cari nomor dokumen terbesar yang cocok dengan prefix ini,
+            // termasuk yang sudah di-soft delete, agar tidak terjadi duplikasi.
+            $lastDocument = ProcessedDocument::withTrashed()
+                ->where('document_number', 'like', $prefix . '%')
+                ->lockForUpdate()
                 ->orderBy('document_number', 'desc')
                 ->first();
 
             $sequence = 1;
 
-            if ($lastDocument && preg_match('/-(\d+)$/', $lastDocument->document_number, $matches)) {
+            if ($lastDocument && preg_match('/(\d+)$/', $lastDocument->document_number, $matches)) {
                 $sequence = (int) $matches[1] + 1;
             }
 
-            $year = date('Y');
-            $code = $type ? strtoupper($type->code) : 'GEN';
             $paddedSequence = str_pad($sequence, 6, '0', STR_PAD_LEFT);
 
-            return "JEC-{$code}-{$year}-{$paddedSequence}";
+            return "{$prefix}{$paddedSequence}";
         });
     }
 }
+
