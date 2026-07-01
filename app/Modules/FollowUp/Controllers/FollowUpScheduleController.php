@@ -79,6 +79,10 @@ class FollowUpScheduleController extends Controller
     {
         abort_if($schedule->clinic_id !== Auth::user()->clinic_id, 403);
 
+        if ($schedule->reminder_sent) {
+            return back()->with('error', 'Reminder WhatsApp untuk jadwal ini sudah pernah terkirim.');
+        }
+
         if (empty($schedule->patient->phone)) {
             return back()->with('error', 'Pasien tidak memiliki nomor telepon terdaftar.');
         }

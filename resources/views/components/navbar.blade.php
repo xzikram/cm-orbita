@@ -5,12 +5,14 @@
         $dueSchedules = \App\Models\FollowUpSchedule::with('patient')
             ->where('clinic_id', Auth::user()->clinic_id)
             ->where('status', 'pending')
+            ->where('reminder_sent', false)
             ->where('scheduled_date', '<=', now()->toDateString())
             ->orderBy('scheduled_date', 'asc')
             ->take(5)
             ->get();
         $dueCount = \App\Models\FollowUpSchedule::where('clinic_id', Auth::user()->clinic_id)
             ->where('status', 'pending')
+            ->where('reminder_sent', false)
             ->where('scheduled_date', '<=', now()->toDateString())
             ->count();
     }
