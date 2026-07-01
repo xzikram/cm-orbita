@@ -83,6 +83,10 @@ class FollowUpScheduleController extends Controller
             return back()->with('error', 'Reminder WhatsApp untuk jadwal ini sudah pernah terkirim.');
         }
 
+        if (!$schedule->isReadyForReminder()) {
+            return back()->with('error', 'Jadwal kontrol ' . $schedule->label . ' belum masuk waktunya untuk diingatkan.');
+        }
+
         if (empty($schedule->patient->phone)) {
             return back()->with('error', 'Pasien tidak memiliki nomor telepon terdaftar.');
         }

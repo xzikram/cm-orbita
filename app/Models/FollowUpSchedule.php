@@ -105,6 +105,11 @@ class FollowUpSchedule extends Model
         return $this->status === 'pending' && $this->effective_date->isPast();
     }
 
+    public function isReadyForReminder(): bool
+    {
+        return now()->startOfDay()->diffInDays($this->scheduled_date, false) <= 1;
+    }
+
     public function markCompleted(): void
     {
         $this->update(['status' => 'completed']);

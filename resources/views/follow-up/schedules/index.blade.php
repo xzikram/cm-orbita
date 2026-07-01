@@ -45,7 +45,7 @@
                     <th>Pasien</th>
                     <th>Dokter Awal</th>
                     <th>Jenis Kontrol</th>
-                    <th>Status</th>
+                    <th>Status Kunjungan</th>
                     <th class="text-right">Aksi</th>
                 </tr>
             </thead>
@@ -86,6 +86,12 @@
                                             <svg class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                                             WA Terkirim
                                         </span>
+                                    @elseif(!$schedule->isReadyForReminder())
+                                        <!-- Belum Masuk Waktunya -->
+                                        <button type="button" class="inline-flex items-center gap-x-1 rounded-xl bg-slate-100 dark:bg-slate-800/40 px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 ring-1 ring-inset ring-slate-200 dark:ring-slate-800 cursor-not-allowed" title="Belum masuk waktu pengiriman reminder" disabled>
+                                            <svg class="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0" /></svg>
+                                            Belum Waktunya
+                                        </button>
                                     @else
                                         <!-- Tombol Kirim WA -->
                                         <form action="{{ route('follow-up.schedules.send-reminder', $schedule) }}" method="POST" class="inline">
