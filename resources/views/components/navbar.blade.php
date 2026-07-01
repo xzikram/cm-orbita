@@ -1,3 +1,20 @@
+@php
+    $dueCount = 0;
+    $dueSchedules = collect();
+    if (Auth::check() && Auth::user()->clinic_id) {
+        $dueSchedules = \App\Models\FollowUpSchedule::with('patient')
+            ->where('clinic_id', Auth::user()->clinic_id)
+            ->where('status', 'pending')
+            ->where('scheduled_date', '<=', now()->toDateString())
+            ->orderBy('scheduled_date', 'asc')
+            ->take(5)
+            ->get();
+        $dueCount = \App\Models\FollowUpSchedule::where('clinic_id', Auth::user()->clinic_id)
+            ->where('status', 'pending')
+            ->where('scheduled_date', '<=', now()->toDateString())
+            ->count();
+    }
+@endphp
 <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl px-4 shadow-sm shadow-slate-900/[0.03] ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04] sm:gap-x-6 sm:px-6 lg:px-8">
     <button type="button" class="-m-2.5 p-2.5 text-slate-600 dark:text-slate-400 lg:hidden rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200" @click="sidebarOpen = true">
         <span class="sr-only">Open sidebar</span>
@@ -62,6 +79,90 @@
                 </template>
             </div>
             @endauth
+
+            <!-- Notification Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" @click.outside="open = false"
+                        class="relative p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
+                        title="Notifikasi Follow-Up">
+                    <!-- Bell Icon -->
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                    </svg>
+                    @if($dueCount > 0)
+                        <!-- Badge -->
+                        <span class="absolute top-1.5 right-1.5 flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                    @endif
+                </button>
+
+                <!-- Dropdown panel -->
+                <div x-show="open"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="transform opacity-0 scale-95 -translate-y-2"
+                     x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     class="absolute right-0 z-50 mt-3 w-80 origin-top-right rounded-2xl bg-white dark:bg-slate-800 py-2 shadow-xl shadow-slate-900/10 dark:shadow-black/30 ring-1 ring-slate-900/[0.06] dark:ring-white/[0.06] focus:outline-none"
+                     role="menu" x-cloak>
+                    
+                    <div class="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-850 dark:text-slate-200">Perlu Follow-Up</span>
+                        @if($dueCount > 0)
+                            <span class="inline-flex items-center rounded-md bg-red-50 dark:bg-red-950/30 px-2 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-400 ring-1 ring-inset ring-red-600/10 dark:ring-red-500/10">
+                                {{ $dueCount }} Pasien
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="max-h-64 overflow-y-auto py-1">
+                        @forelse($dueSchedules as $sch)
+                            <div class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors flex items-center justify-between gap-x-2 border-b border-slate-50 dark:border-slate-700/20 last:border-0 text-left">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                                        {{ $sch->patient->name }}
+                                    </p>
+                                    <p class="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-x-1 mt-0.5">
+                                        <span>{{ $sch->label }}</span>
+                                        <span>•</span>
+                                        <span class="{{ $sch->isOverdue() ? 'text-orange-500 font-semibold' : '' }}">
+                                            {{ $sch->scheduled_date->format('d M') }}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-x-1 shrink-0">
+                                    <!-- Aksi pintas Kirim WA -->
+                                    <form action="{{ route('follow-up.schedules.send-reminder', $sch) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="p-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/45 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/70 transition-colors" title="Kirim WA">
+                                            <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+                                        </button>
+                                    </form>
+
+                                    <!-- Aksi pintas Catat Kehadiran -->
+                                    <a href="{{ route('follow-up.schedules.record', $sch) }}" class="p-1 rounded-lg bg-blue-50 dark:bg-blue-950/45 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/70 transition-colors" title="Catat Kunjungan">
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="px-4 py-6 text-center">
+                                <svg class="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 font-medium">Tidak ada kontrol jatuh tempo</p>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <a href="{{ route('follow-up.schedules.index') }}" class="block text-center py-2 border-t border-slate-100 dark:border-slate-700/50 text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-all rounded-b-2xl">
+                        Lihat Semua Jadwal
+                    </a>
+                </div>
+            </div>
 
             <!-- Dark Mode Toggle -->
             <button @click="darkMode = !darkMode"

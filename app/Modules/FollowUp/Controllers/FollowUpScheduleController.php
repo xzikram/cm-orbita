@@ -6,6 +6,7 @@ use App\Models\FollowUpSchedule;
 use App\Models\FollowUpStatus;
 use App\Models\LensCondition;
 use App\Modules\FollowUp\Services\FollowUpService;
+use App\Modules\Reminder\Services\ReminderService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -72,5 +73,40 @@ class FollowUpScheduleController extends Controller
 
         return redirect()->route('follow-up.schedules.index')
             ->with('success', 'Hasil kontrol berhasil disimpan.');
+    }
+
+    public function sendReminder(FollowUpSchedule $schedule, ReminderService $reminderService)
+    {
+        abort_if($schedule->clinic_id !== Auth::user()->clinic_id, 403);
+
+        if (empty($schedule->patient->phone)) {
+            return back()->with('error', 'Pasien tidak memiliki nomor telepon terdaftar.');
+        }
+
+        try {
+            // 1. Buat data reminder di tabel reminders
+            $this->followUpService->createRemindersForSchedule($schedule);
+            
+            // 2. Temukan data reminder yang baru saja dibuat
+            $reminder = \App\Models\Reminder::where('follow_up_schedule_id', $schedule->id)
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+
+            if (!$reminder) {
+                return back()->with('error', 'Gagal membuat pengingat. Pastikan template default untuk WhatsApp aktif telah dikonfigurasi.');
+            }
+
+            // 3. Kirim pesan saat ini juga
+            $result = $reminderService->send($reminder);
+
+            if ($result->success) {
+                return back()->with('success', 'Reminder WhatsApp berhasil dikirim ke ' . $schedule->patient->name);
+            }
+
+            return back()->with('error', 'Gagal mengirim WhatsApp: ' . ($result->error ?? 'Kesalahan tidak diketahui'));
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 }

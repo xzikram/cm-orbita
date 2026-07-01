@@ -60,6 +60,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('schedules.index')
             ->middleware('permission:follow-up.view');
 
+        Route::post('schedules/{schedule}/send-reminder', [FollowUpScheduleController::class, 'sendReminder'])
+            ->name('schedules.send-reminder')
+            ->middleware('permission:follow-up.view');
+
         Route::get('schedules/{schedule}/record', [FollowUpScheduleController::class, 'recordVisit'])
             ->name('schedules.record')
             ->middleware('permission:follow-up.record-visit');

@@ -78,14 +78,33 @@
                             <span class="{{ $statusConfig['class'] }}">{{ $statusConfig['label'] }}</span>
                         </td>
                         <td class="text-right">
-                            @if($schedule->status === 'pending' || $schedule->status === 'missed')
-                                <a href="{{ route('follow-up.schedules.record', $schedule) }}" class="table-action-primary">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Catat Kehadiran
-                                </a>
-                            @else
-                                <span class="text-xs text-slate-400 dark:text-slate-500">Tercatat</span>
-                            @endif
+                            <div class="flex items-center justify-end gap-x-2">
+                                @if($schedule->status === 'pending' || $schedule->status === 'missed')
+                                    <!-- Status pengiriman WA -->
+                                    @if($schedule->reminder_sent)
+                                        <span class="inline-flex items-center gap-x-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20 dark:ring-emerald-500/20" title="Terkirim pada {{ $schedule->reminder_sent_at ? $schedule->reminder_sent_at->format('d M Y H:i') : '' }}">
+                                            <svg class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                            WA Terkirim
+                                        </span>
+                                    @else
+                                        <!-- Tombol Kirim WA -->
+                                        <form action="{{ route('follow-up.schedules.send-reminder', $schedule) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="inline-flex items-center gap-x-1.5 rounded-xl bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80 transition-all duration-200" title="Kirim Pengingat WhatsApp">
+                                                <svg class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+                                                Kirim WA
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    <a href="{{ route('follow-up.schedules.record', $schedule) }}" class="table-action-primary">
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Catat Kehadiran
+                                    </a>
+                                @else
+                                    <span class="text-xs text-slate-400 dark:text-slate-500">Tercatat</span>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty
