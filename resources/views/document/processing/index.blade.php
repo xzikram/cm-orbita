@@ -42,14 +42,22 @@
                     <tr>
                         <td class="font-semibold text-slate-900 dark:text-white font-mono whitespace-nowrap">{{ $doc->document_number }}</td>
                         <td>
-                            @if($doc->patient)
-                                <div class="font-semibold text-slate-900 dark:text-white">{{ $doc->patient->name }}</div>
-                                <div class="text-xs text-slate-400">RM: {{ $doc->patient->medical_record_number }}</div>
+                            @php
+                                $patient = $doc->patient ?? $doc->deliveries->first()?->patient;
+                            @endphp
+                            @if($patient)
+                                <div class="font-semibold text-slate-900 dark:text-white">{{ $patient->name }}</div>
+                                <div class="text-xs text-slate-400">RM: {{ $patient->medical_record_number }}</div>
                             @else
                                 <span class="text-slate-400">-</span>
                             @endif
                         </td>
-                        <td class="text-slate-500 dark:text-slate-400">{{ $doc->documentType?->name ?? '-' }}</td>
+                        <td class="text-slate-500 dark:text-slate-400">
+                            @php
+                                $docType = $doc->documentType ?? $doc->deliveries->first()?->documentType;
+                            @endphp
+                            {{ $docType?->name ?? '-' }}
+                        </td>
                         <td class="text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ $doc->created_at->format('d M Y, H:i') }}</td>
                         <td>
                             @php

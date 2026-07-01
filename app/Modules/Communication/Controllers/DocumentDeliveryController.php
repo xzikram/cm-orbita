@@ -154,6 +154,17 @@ class DocumentDeliveryController extends Controller
                 processedDocumentId: $request->filled('processed_document_id') ? $request->processed_document_id : null
             );
 
+            // Sinkronisasi info pasien & tipe dokumen ke ProcessedDocument jika sebelumnya kosong
+            if ($request->filled('processed_document_id')) {
+                $processedDoc = \App\Models\ProcessedDocument::find($request->processed_document_id);
+                if ($processedDoc) {
+                    $processedDoc->update([
+                        'patient_id' => $processedDoc->patient_id ?? $patient->id,
+                        'document_type_id' => $processedDoc->document_type_id ?? $documentType->id,
+                    ]);
+                }
+            }
+
             if ($request->channel === 'whatsapp') {
                 return redirect()->route('communication.deliveries.index')
                     ->with('success', 'Dokumen berhasil dikirim ke pasien via WhatsApp.');
