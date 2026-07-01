@@ -150,7 +150,8 @@ class DocumentDeliveryController extends Controller
                 userId: Auth::id(),
                 channel: $request->channel,
                 recipientPhone: $request->recipient_phone,
-                password: $password
+                password: $password,
+                processedDocumentId: $request->filled('processed_document_id') ? $request->processed_document_id : null
             );
 
             if ($request->channel === 'whatsapp') {

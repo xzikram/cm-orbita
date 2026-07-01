@@ -41,4 +41,14 @@ class ProcessedDocument extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function deliveries(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DocumentDelivery::class, 'processed_document_id');
+    }
+
+    public function latestDelivery(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DocumentDelivery::class, 'processed_document_id')->latestOfMany();
+    }
 }

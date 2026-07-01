@@ -49,7 +49,8 @@ class DocumentDeliveryService
         int $userId,
         string $channel = 'email',
         ?string $recipientPhone = null,
-        ?string $password = null
+        ?string $password = null,
+        ?int $processedDocumentId = null
     ): DocumentDelivery {
         // 1. Temporarily store the file
         $fileName = $file->getClientOriginalName();
@@ -112,6 +113,7 @@ class DocumentDeliveryService
                 'patient_id' => $patient->id,
                 'document_type_id' => $documentType->id,
                 'email_template_id' => $template->id,
+                'processed_document_id' => $processedDocumentId,
                 'sent_by' => $userId,
                 'channel' => 'whatsapp',
                 'recipient_phone' => $recipientPhone,
@@ -173,6 +175,7 @@ class DocumentDeliveryService
                 'email_account_id' => $account?->id,
                 'document_type_id' => $documentType->id,
                 'email_template_id' => $template->id,
+                'processed_document_id' => $processedDocumentId,
                 'sent_by' => $userId,
                 'channel' => 'email',
                 'recipient_email' => $recipientEmail,

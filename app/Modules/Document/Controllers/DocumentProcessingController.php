@@ -17,7 +17,7 @@ class DocumentProcessingController extends Controller
 
     public function index()
     {
-        $documents = ProcessedDocument::with(['patient', 'documentType', 'documentTemplate', 'creator'])
+        $documents = ProcessedDocument::with(['patient', 'documentType', 'documentTemplate', 'creator', 'deliveries'])
             ->where('clinic_id', Auth::user()->clinic_id)
             ->latest()
             ->paginate(config('cfms.per_page'));

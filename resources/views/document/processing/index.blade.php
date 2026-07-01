@@ -33,6 +33,7 @@
                     <th>Pasien</th>
                     <th>Tipe Dokumen</th>
                     <th>Tanggal Diproses</th>
+                    <th>Status Kirim</th>
                     <th class="text-right">Aksi</th>
                 </tr>
             </thead>
@@ -50,6 +51,16 @@
                         </td>
                         <td class="text-slate-500 dark:text-slate-400">{{ $doc->documentType?->name ?? '-' }}</td>
                         <td class="text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ $doc->created_at->format('d M Y, H:i') }}</td>
+                        <td>
+                            @php
+                                $isSent = $doc->deliveries->where('status', 'sent')->isNotEmpty();
+                            @endphp
+                            @if($isSent)
+                                <span class="badge-green">TERKIRIM</span>
+                            @else
+                                <span class="inline-flex items-center gap-x-1 rounded-full bg-slate-50 dark:bg-slate-500/10 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400 ring-1 ring-inset ring-slate-500/10 dark:ring-slate-500/20">BELUM PERNAH KIRIM</span>
+                            @endif
+                        </td>
                         <td class="text-right">
                             <div class="flex items-center justify-end gap-x-2">
                                 <a href="{{ route('dpc.processing.show', $doc) }}" class="table-action-primary">Lihat / Kirim</a>
@@ -62,7 +73,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5">
+                        <td colspan="6">
                             <div class="empty-state">
                                 <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
                                 <h3 class="empty-state-title">Belum ada dokumen diproses</h3>

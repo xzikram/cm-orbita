@@ -9,7 +9,7 @@ class DocumentDelivery extends Model
 {
     protected $fillable = [
         'clinic_id', 'patient_id', 'email_account_id', 'whatsapp_account_id', 'document_type_id',
-        'email_template_id', 'sent_by', 'channel', 'recipient_email', 
+        'email_template_id', 'processed_document_id', 'sent_by', 'channel', 'recipient_email', 
         'recipient_phone', 'subject', 'attachment_name', 'attachment_path',
         'status', 'error_message', 'sent_at',
     ];
@@ -21,6 +21,11 @@ class DocumentDelivery extends Model
     public function clinic(): BelongsTo
     {
         return $this->belongsTo(Clinic::class);
+    }
+
+    public function processedDocument(): BelongsTo
+    {
+        return $this->belongsTo(ProcessedDocument::class, 'processed_document_id');
     }
 
     public function patient(): BelongsTo
