@@ -28,11 +28,12 @@ class FollowUpScheduleController extends Controller
             'direction' => $request->get('direction', 'asc'),
         ]);
 
+        $dateLimit = now()->addDay()->toDateString();
         $statusCounts = [
-            'all' => FollowUpSchedule::where('clinic_id', $clinicId)->count(),
-            'pending' => FollowUpSchedule::where('clinic_id', $clinicId)->where('status', 'pending')->count(),
-            'completed' => FollowUpSchedule::where('clinic_id', $clinicId)->where('status', 'completed')->count(),
-            'missed' => FollowUpSchedule::where('clinic_id', $clinicId)->where('status', 'missed')->count(),
+            'all' => FollowUpSchedule::where('clinic_id', $clinicId)->whereDate('scheduled_date', '<=', $dateLimit)->count(),
+            'pending' => FollowUpSchedule::where('clinic_id', $clinicId)->whereDate('scheduled_date', '<=', $dateLimit)->where('status', 'pending')->count(),
+            'completed' => FollowUpSchedule::where('clinic_id', $clinicId)->whereDate('scheduled_date', '<=', $dateLimit)->where('status', 'completed')->count(),
+            'missed' => FollowUpSchedule::where('clinic_id', $clinicId)->whereDate('scheduled_date', '<=', $dateLimit)->where('status', 'missed')->count(),
             'overdue' => FollowUpSchedule::where('clinic_id', $clinicId)->overdue()->count(),
         ];
 

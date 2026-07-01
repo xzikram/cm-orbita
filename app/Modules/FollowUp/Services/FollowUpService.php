@@ -121,7 +121,8 @@ class FollowUpService
     public function getSchedules(int $clinicId, array $filters = []): LengthAwarePaginator
     {
         $query = FollowUpSchedule::with(['patient', 'examination.doctor', 'latestVisit'])
-            ->where('clinic_id', $clinicId);
+            ->where('clinic_id', $clinicId)
+            ->whereDate('scheduled_date', '<=', now()->addDay()->toDateString());
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
