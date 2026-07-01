@@ -338,16 +338,19 @@
             `;
         }
     });
-    document.getElementById('document_pdf').addEventListener('change', function(e) {
-        if(e.target.files.length > 0) {
-            let fileNames = [];
-            for (let i = 0; i < e.target.files.length; i++) {
-                fileNames.push(e.target.files[i].name);
+    const docPdfInput = document.getElementById('document_pdf');
+    if (docPdfInput) {
+        docPdfInput.addEventListener('change', function(e) {
+            if(e.target.files.length > 0) {
+                let fileNames = [];
+                for (let i = 0; i < e.target.files.length; i++) {
+                    fileNames.push(e.target.files[i].name);
+                }
+                document.getElementById('file-name-display').innerText = 'File terpilih (' + e.target.files.length + '): ' + fileNames.join(', ');
+                document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
             }
-            document.getElementById('file-name-display').innerText = 'File terpilih (' + e.target.files.length + '): ' + fileNames.join(', ');
-            document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
-        }
-    });
+        });
+    }
 
     const patientSelect = document.getElementById('patient_id');
     const channelSelect = document.getElementById('channel');
@@ -523,16 +526,19 @@
             </div>
         `;
         
-        document.getElementById('document_pdf').addEventListener('change', function(e) {
-            if(e.target.files.length > 0) {
-                let fileNames = [];
-                for (let i = 0; i < e.target.files.length; i++) {
-                    fileNames.push(e.target.files[i].name);
+        const docPdfInputReset = document.getElementById('document_pdf');
+        if (docPdfInputReset) {
+            docPdfInputReset.addEventListener('change', function(e) {
+                if(e.target.files.length > 0) {
+                    let fileNames = [];
+                    for (let i = 0; i < e.target.files.length; i++) {
+                        fileNames.push(e.target.files[i].name);
+                    }
+                    document.getElementById('file-name-display').innerText = 'File terpilih (' + e.target.files.length + '): ' + fileNames.join(', ');
+                    document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
                 }
-                document.getElementById('file-name-display').innerText = 'File terpilih (' + e.target.files.length + '): ' + fileNames.join(', ');
-                document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
-            }
-        });
+            });
+        }
     }
 
     $(document).ready(function() {
