@@ -29,11 +29,11 @@
                             {{ $log->created_at->format('d M Y, H:i:s') }}
                         </td>
                         <td class="text-slate-600 dark:text-slate-300">
-                            {{ $log->reminder->patient->name ?? 'Unknown' }}
+                            {{ $log->reminder->followUpSchedule->patient->name ?? $log->reminder->recipient_name ?? 'Unknown' }}
                         </td>
                         <td>
                             @if(isset($log->reminder))
-                                <span class="badge-blue">{{ strtoupper($log->reminder->type) }}</span>
+                                <span class="badge-blue">{{ strtoupper($log->reminder->recipient_type ?? 'PATIENT') }}</span>
                             @endif
                         </td>
                         <td>

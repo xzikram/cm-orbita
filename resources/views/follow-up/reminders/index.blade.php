@@ -29,7 +29,7 @@
                             {{ $reminder->scheduled_at->format('d M Y H:i') }}
                         </td>
                         <td class="text-slate-600 dark:text-slate-300">
-                            {{ $reminder->patient->name ?? $reminder->recipient_name }}
+                            {{ $reminder->followUpSchedule->patient->name ?? $reminder->recipient_name }}
                         </td>
                         <td>
                             @if($reminder->channel === 'whatsapp')

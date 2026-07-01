@@ -12,7 +12,7 @@ class ReminderMonitorController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Reminder::with(['patient', 'schedule'])
+        $query = Reminder::with(['followUpSchedule.patient'])
             ->where('clinic_id', Auth::user()->clinic_id);
 
         if ($status = $request->get('status')) {
@@ -27,7 +27,7 @@ class ReminderMonitorController extends Controller
 
     public function logs(Request $request)
     {
-        $logs = ReminderLog::with('reminder.patient')
+        $logs = ReminderLog::with(['reminder.followUpSchedule.patient'])
             ->latest()
             ->paginate(config('cfms.per_page', 15));
 
