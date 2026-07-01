@@ -29,13 +29,15 @@
         </div>
     </div>
 
-    <form id="bulk-send-form" action="{{ route('communication.deliveries.create') }}" method="GET">
-        <div class="table-container">
-            <table class="premium-table">
+    <form id="bulk-send-form" action="{{ route('communication.deliveries.create') }}" method="GET" class="block w-full max-w-full">
+        <div class="table-container w-full overflow-x-auto">
+            <table class="premium-table w-full">
                 <thead>
                     <tr>
-                        <th class="w-10">
-                            <input type="checkbox" id="select-all-docs" class="rounded border-slate-300 text-primary-600 focus:ring-primary-600">
+                        <th class="w-12 text-center">
+                            <div class="flex items-center justify-center">
+                                <input type="checkbox" id="select-all-docs" class="rounded border-slate-300 text-primary-600 focus:ring-primary-600">
+                            </div>
                         </th>
                         <th>No. Dokumen</th>
                         <th>Nama File</th>
@@ -49,11 +51,13 @@
                 <tbody>
                     @forelse($documents as $doc)
                         <tr>
-                            <td>
-                                <input type="checkbox" name="processed_document_ids[]" value="{{ $doc->id }}" class="doc-checkbox rounded border-slate-300 text-primary-600 focus:ring-primary-600">
+                            <td class="text-center">
+                                <div class="flex items-center justify-center">
+                                    <input type="checkbox" name="processed_document_ids[]" value="{{ $doc->id }}" class="doc-checkbox rounded border-slate-300 text-primary-600 focus:ring-primary-600">
+                                </div>
                             </td>
                             <td class="font-semibold text-slate-900 dark:text-white font-mono whitespace-nowrap">{{ $doc->document_number }}</td>
-                            <td class="text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ $doc->original_filename }}">{{ $doc->original_filename ?? '-' }}</td>
+                            <td class="text-slate-500 dark:text-slate-400 max-w-[180px] truncate" title="{{ $doc->original_filename }}">{{ $doc->original_filename ?? '-' }}</td>
                             <td>
                                 @php
                                     $patient = $doc->patient ?? $doc->deliveries->first()?->patient;
