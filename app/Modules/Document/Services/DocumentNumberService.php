@@ -16,7 +16,7 @@ class DocumentNumberService
     public function generateNumber(?DocumentType $type): string
     {
         return DB::transaction(function () use ($type) {
-            $query = ProcessedDocument::query();
+            $query = ProcessedDocument::withTrashed();
             if ($type) {
                 $query->where('document_type_id', $type->id);
             } else {

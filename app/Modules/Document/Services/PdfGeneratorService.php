@@ -29,7 +29,6 @@ class PdfGeneratorService
     ): ProcessedDocument {
         $uuid = (string) Str::uuid();
         $documentType = $documentTypeId ? \App\Models\DocumentType::find($documentTypeId) : null;
-        $documentNumber = $this->numberService->generateNumber($documentType);
 
         // 1. Store Original PDF
         $originalFilename = "{$uuid}_original.pdf";
@@ -152,18 +151,32 @@ class PdfGeneratorService
         $fpdi->Output($generatedAbsolutePath, 'F');
 
         // 6. Save to Database
-        return ProcessedDocument::create([
-            'uuid' => $uuid,
-            'document_number' => $documentNumber,
-            'clinic_id' => $patient?->clinic_id ?? (\App\Models\User::find($userId)?->clinic_id ?? auth()->user()?->clinic_id),
-            'patient_id' => $patient?->id,
-            'document_type_id' => $documentTypeId,
-            'document_template_id' => $template->id,
-            'original_file_path' => $originalPath,
-            'generated_file_path' => $generatedRelativePath,
-            'original_filename' => $originalFile->getClientOriginalName(),
-            'status' => 'generated',
-            'created_by' => $userId,
-        ]);
+        return \Illuminate\Support\Facades\DB::transaction(function () use (
+            $uuid,
+            $documentType,
+            $patient,
+            $documentTypeId,
+            $template,
+            $originalPath,
+            $generatedRelativePath,
+            $originalFile,
+            $userId
+        ) {
+            $documentNumber = $this->numberService->generateNumber($documentType);
+
+            return ProcessedDocument::create([
+                'uuid' => $uuid,
+                'document_number' => $documentNumber,
+                'clinic_id' => $patient?->clinic_id ?? (\App\Models\User::find($userId)?->clinic_id ?? auth()->user()?->clinic_id),
+                'patient_id' => $patient?->id,
+                'document_type_id' => $documentTypeId,
+                'document_template_id' => $template->id,
+                'original_file_path' => $originalPath,
+                'generated_file_path' => $generatedRelativePath,
+                'original_filename' => $originalFile->getClientOriginalName(),
+                'status' => 'generated',
+                'created_by' => $userId,
+            ]);
+        });
     }
 }
