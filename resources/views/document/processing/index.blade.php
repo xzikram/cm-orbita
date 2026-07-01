@@ -61,7 +61,20 @@
                         <th>Nama File</th>
                         <th>Pasien</th>
                         <th>Tipe Dokumen</th>
-                        <th>Tanggal</th>
+                        <th>
+                            <a href="{{ route('dpc.processing.index', ['sort' => $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-200">
+                                Tanggal
+                                @if($sortDirection === 'asc')
+                                    <svg class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                                    </svg>
+                                @else
+                                    <svg class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                @endif
+                            </a>
+                        </th>
                         <th>Status</th>
                         <th class="text-right">Aksi</th>
                     </tr>

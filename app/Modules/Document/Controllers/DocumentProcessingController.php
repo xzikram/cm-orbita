@@ -15,14 +15,20 @@ class DocumentProcessingController extends Controller
 {
     public function __construct(protected PdfGeneratorService $pdfService) {}
 
-    public function index()
+    public function index(Request $request)
     {
+        $sortDirection = $request->get('sort', 'desc');
+        if (!in_array($sortDirection, ['asc', 'desc'])) {
+            $sortDirection = 'desc';
+        }
+
         $documents = ProcessedDocument::with(['patient', 'documentType', 'documentTemplate', 'creator', 'deliveries'])
             ->where('clinic_id', Auth::user()->clinic_id)
-            ->latest()
-            ->paginate(config('cfms.per_page'));
+            ->orderBy('created_at', $sortDirection)
+            ->paginate(config('cfms.per_page'))
+            ->withQueryString();
 
-        return view('document.processing.index', compact('documents'));
+        return view('document.processing.index', compact('documents', 'sortDirection'));
     }
 
     public function create()
