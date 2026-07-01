@@ -36,10 +36,21 @@ class DocumentDeliveryController extends Controller
 
         $selectedPatient = $request->get('patient_id') ? Patient::find($request->get('patient_id')) : null;
         
-        $processedDoc = null;
-        if ($request->has('processed_document_id')) {
-            $processedDoc = \App\Models\ProcessedDocument::find($request->get('processed_document_id'));
+        $processedDocs = collect();
+        if ($request->has('processed_document_ids')) {
+            $processedDocs = \App\Models\ProcessedDocument::whereIn('id', (array)$request->get('processed_document_ids'))
+                ->where('clinic_id', $clinicId)
+                ->get();
+        } elseif ($request->has('processed_document_id')) {
+            $singleDoc = \App\Models\ProcessedDocument::where('id', $request->get('processed_document_id'))
+                ->where('clinic_id', $clinicId)
+                ->first();
+            if ($singleDoc) {
+                $processedDocs = collect([$singleDoc]);
+            }
         }
+
+        $processedDoc = $processedDocs->first();
 
         // Cek status koneksi WhatsApp Gateway
         $provider = app(\App\Modules\Reminder\Contracts\WhatsAppProviderInterface::class);
@@ -48,7 +59,7 @@ class DocumentDeliveryController extends Controller
             $whatsappConnected = $provider->checkStatus();
         }
 
-        return view('communication.deliveries.create', compact('patients', 'documentTypes', 'templates', 'accounts', 'selectedPatient', 'processedDoc', 'whatsappConnected'));
+        return view('communication.deliveries.create', compact('patients', 'documentTypes', 'templates', 'accounts', 'selectedPatient', 'processedDoc', 'processedDocs', 'whatsappConnected'));
     }
 
     public function store(Request $request)
@@ -61,8 +72,10 @@ class DocumentDeliveryController extends Controller
             'email_account_id' => 'required_if:channel,email|nullable|exists:email_accounts,id',
             'recipient_email' => 'required_if:channel,email|nullable|email',
             'recipient_phone' => 'required_if:channel,whatsapp|nullable|string',
-            'document_pdf' => 'required_without:processed_document_id|nullable|file|mimes:pdf|max:10240', // Max 10MB
-            'processed_document_id' => 'required_without:document_pdf|nullable|exists:processed_documents,id',
+            'document_pdf' => 'required_without_all:processed_document_id,processed_document_ids|nullable|file|mimes:pdf|max:10240', // Max 10MB
+            'processed_document_id' => 'required_without_all:document_pdf,processed_document_ids|nullable|exists:processed_documents,id',
+            'processed_document_ids' => 'nullable|array',
+            'processed_document_ids.*' => 'exists:processed_documents,id',
             'password_protect' => 'nullable|boolean',
             'manual_dob' => 'nullable|date',
         ]);
@@ -108,18 +121,28 @@ class DocumentDeliveryController extends Controller
         $template = EmailTemplate::findOrFail($request->email_template_id);
         $account = $request->channel === 'email' ? EmailAccount::findOrFail($request->email_account_id) : null;
 
-        if ($request->filled('processed_document_id')) {
-            $processedDoc = \App\Models\ProcessedDocument::findOrFail($request->processed_document_id);
-            $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($processedDoc->generated_file_path);
-            $file = new \Illuminate\Http\UploadedFile(
-                $filePath,
-                $processedDoc->original_filename ?? basename($processedDoc->generated_file_path),
-                'application/pdf',
-                null,
-                true // test mode
-            );
-        } else {
-            $file = $request->file('document_pdf');
+        $processedDocs = collect();
+        if ($request->has('processed_document_ids')) {
+            $processedDocs = \App\Models\ProcessedDocument::whereIn('id', (array)$request->processed_document_ids)
+                ->where('clinic_id', Auth::user()->clinic_id)
+                ->get();
+        }
+
+        $file = null;
+        if ($processedDocs->isEmpty()) {
+            if ($request->filled('processed_document_id')) {
+                $processedDoc = \App\Models\ProcessedDocument::findOrFail($request->processed_document_id);
+                $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($processedDoc->generated_file_path);
+                $file = new \Illuminate\Http\UploadedFile(
+                    $filePath,
+                    $processedDoc->original_filename ?? basename($processedDoc->generated_file_path),
+                    'application/pdf',
+                    null,
+                    true // test mode
+                );
+            } else {
+                $file = $request->file('document_pdf');
+            }
         }
 
         // Validasi koneksi WhatsApp Gateway jika mengirim lewat WA
@@ -140,28 +163,51 @@ class DocumentDeliveryController extends Controller
         }
 
         try {
-            $delivery = $this->deliveryService->sendDocument(
-                patient: $patient,
-                documentType: $documentType,
-                template: $template,
-                account: $account,
-                file: $file,
-                recipientEmail: $request->recipient_email,
-                userId: Auth::id(),
-                channel: $request->channel,
-                recipientPhone: $request->recipient_phone,
-                password: $password,
-                processedDocumentId: $request->filled('processed_document_id') ? $request->processed_document_id : null
-            );
+            if ($processedDocs->isNotEmpty()) {
+                $deliveries = $this->deliveryService->sendMultipleDocuments(
+                    patient: $patient,
+                    documentType: $documentType,
+                    template: $template,
+                    account: $account,
+                    processedDocs: $processedDocs,
+                    recipientEmail: $request->recipient_email,
+                    userId: Auth::id(),
+                    channel: $request->channel,
+                    recipientPhone: $request->recipient_phone,
+                    password: $password
+                );
 
-            // Sinkronisasi info pasien & tipe dokumen ke ProcessedDocument jika sebelumnya kosong
-            if ($request->filled('processed_document_id')) {
-                $processedDoc = \App\Models\ProcessedDocument::find($request->processed_document_id);
-                if ($processedDoc) {
-                    $processedDoc->update([
-                        'patient_id' => $processedDoc->patient_id ?? $patient->id,
-                        'document_type_id' => $processedDoc->document_type_id ?? $documentType->id,
+                // Sinkronisasi info pasien & tipe dokumen ke semua ProcessedDocument jika kosong
+                foreach ($processedDocs as $doc) {
+                    $doc->update([
+                        'patient_id' => $doc->patient_id ?? $patient->id,
+                        'document_type_id' => $doc->document_type_id ?? $documentType->id,
                     ]);
+                }
+            } else {
+                $delivery = $this->deliveryService->sendDocument(
+                    patient: $patient,
+                    documentType: $documentType,
+                    template: $template,
+                    account: $account,
+                    file: $file,
+                    recipientEmail: $request->recipient_email,
+                    userId: Auth::id(),
+                    channel: $request->channel,
+                    recipientPhone: $request->recipient_phone,
+                    password: $password,
+                    processedDocumentId: $request->filled('processed_document_id') ? $request->processed_document_id : null
+                );
+
+                // Sinkronisasi info pasien & tipe dokumen ke ProcessedDocument jika sebelumnya kosong
+                if ($request->filled('processed_document_id')) {
+                    $processedDoc = \App\Models\ProcessedDocument::find($request->processed_document_id);
+                    if ($processedDoc) {
+                        $processedDoc->update([
+                            'patient_id' => $processedDoc->patient_id ?? $patient->id,
+                            'document_type_id' => $processedDoc->document_type_id ?? $documentType->id,
+                        ]);
+                    }
                 }
             }
 

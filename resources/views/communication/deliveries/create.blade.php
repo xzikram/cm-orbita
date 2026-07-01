@@ -86,7 +86,11 @@
         <form action="{{ route('communication.deliveries.store') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-8">
             @csrf
             
-            @if(isset($processedDoc))
+            @if(isset($processedDocs) && $processedDocs->isNotEmpty())
+                @foreach($processedDocs as $doc)
+                    <input type="hidden" name="processed_document_ids[]" value="{{ $doc->id }}">
+                @endforeach
+            @elseif(isset($processedDoc))
                 <input type="hidden" id="processed_document_id" name="processed_document_id" value="{{ $processedDoc->id }}">
             @endif
 
@@ -234,7 +238,24 @@
                 
                 <!-- File Upload -->
                 <div class="sm:col-span-2" id="pdf-upload-container">
-                    @if(isset($processedDoc))
+                    @if(isset($processedDocs) && $processedDocs->isNotEmpty())
+                        <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Dokumen PDF Terpilih ({{ $processedDocs->count() }} Berkas)</label>
+                        <div class="mt-2 space-y-2">
+                            @foreach($processedDocs as $doc)
+                                <div class="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-3 dark:bg-emerald-950/20 dark:border-emerald-800/30 font-medium">
+                                    <div class="flex items-center gap-3">
+                                        <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                        </svg>
+                                        <div>
+                                            <p class="text-xs font-semibold text-emerald-900 dark:text-emerald-200 font-mono">{{ $doc->document_number }}</p>
+                                            <p class="text-[11px] text-emerald-700 dark:text-emerald-450 mt-0.5">{{ $doc->original_filename ?? basename($doc->generated_file_path) }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif(isset($processedDoc))
                         <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Dokumen PDF Terpilih</label>
                         <div class="mt-2 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-4 dark:bg-emerald-950/20 dark:border-emerald-800/30 font-medium">
                             <div class="flex items-center gap-3">
