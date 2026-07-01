@@ -25,7 +25,7 @@ class DocumentNumberService
 
             // Find the last document, get its sequence
             $lastDocument = $query->lockForUpdate() // Prevent concurrent generation duplicates
-                ->orderBy('id', 'desc')
+                ->orderBy('document_number', 'desc')
                 ->first();
 
             $sequence = 1;
