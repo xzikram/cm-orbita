@@ -280,7 +280,7 @@
                                 <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
                                     <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
                                         <span>Pilih file PDF</span>
-                                        <input id="document_pdf" name="document_pdfs[]" type="file" class="sr-only" accept="application/pdf" multiple required>
+                                        <input id="document_pdf" name="document_pdfs[]" type="file" class="sr-only" accept="application/pdf" multiple>
                                     </label>
                                     <p class="pl-1">atau tarik dan lepas ke sini</p>
                                 </div>
@@ -289,6 +289,8 @@
                         </div>
                     @endif
                     @error('document_pdf')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                    @error('document_pdfs')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                    @error('document_pdfs.*')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
 
@@ -512,7 +514,7 @@
                     <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
                         <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
                             <span>Pilih file PDF</span>
-                            <input id="document_pdf" name="document_pdfs[]" type="file" class="sr-only" accept="application/pdf" multiple required>
+                            <input id="document_pdf" name="document_pdfs[]" type="file" class="sr-only" accept="application/pdf" multiple>
                         </label>
                         <p class="pl-1">atau tarik dan lepas ke sini</p>
                     </div>
