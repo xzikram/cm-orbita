@@ -498,4 +498,181 @@ class DocumentDeliveryService
 
         return $deliveries;
     }
+
+    /**
+     * Send multiple uploaded files via email (single email with multiple attachments) or WhatsApp (multiple messages).
+     * 
+     * @param Patient $patient
+     * @param DocumentType $documentType
+     * @param EmailTemplate $template
+     * @param EmailAccount|null $account
+     * @param array $files
+     * @param string|null $recipientEmail
+     * @param int $userId
+     * @param string $channel
+     * @param string|null $recipientPhone
+     * @param string|null $password
+     * @return array
+     */
+    public function sendMultipleUploadedFiles(
+        Patient $patient,
+        DocumentType $documentType,
+        EmailTemplate $template,
+        ?EmailAccount $account,
+        array $files,
+        ?string $recipientEmail,
+        int $userId,
+        string $channel = 'email',
+        ?string $recipientPhone = null,
+        ?string $password = null
+    ): array {
+        $deliveries = [];
+
+        if ($channel === 'whatsapp') {
+            // For WhatsApp: send one by one
+            foreach ($files as $file) {
+                $deliveries[] = $this->sendDocument(
+                    patient: $patient,
+                    documentType: $documentType,
+                    template: $template,
+                    account: $account,
+                    file: $file,
+                    recipientEmail: $recipientEmail,
+                    userId: $userId,
+                    channel: 'whatsapp',
+                    recipientPhone: $recipientPhone,
+                    password: $password
+                );
+            }
+        } else {
+            // For Email: single email with multiple attachments
+            $attachments = [];
+            $tempFilesToDelete = [];
+
+            // 1. Create delivery records for each file (Pending)
+            foreach ($files as $file) {
+                $fileName = $file->getClientOriginalName();
+                
+                // Store a copy in temp_documents
+                $tempPath = $file->storeAs('temp_documents', uniqid() . '_' . $fileName, 'local');
+                $absolutePath = Storage::disk('local')->path($tempPath);
+
+                // Encrypt PDF if password is provided
+                if (!empty($password)) {
+                    try {
+                        $tempProtectedPath = 'temp_documents/enc_' . uniqid() . '_' . $fileName;
+                        $absoluteProtectedPath = Storage::disk('local')->path($tempProtectedPath);
+                        
+                        if (!file_exists(dirname($absoluteProtectedPath))) {
+                            mkdir(dirname($absoluteProtectedPath), 0755, true);
+                        }
+
+                        $this->encryptPdf($absolutePath, $absoluteProtectedPath, $password);
+
+                        // Clean up the unprotected temp file
+                        Storage::disk('local')->delete($tempPath);
+                        $tempPath = $tempProtectedPath;
+                        $absolutePath = $absoluteProtectedPath;
+                    } catch (\Exception $e) {
+                        Log::error('PDF encryption failed during multi-uploaded-file email send: ' . $e->getMessage());
+                        Storage::disk('local')->delete($tempPath);
+                        throw new \Exception('Gagal mengenkripsi salah satu berkas PDF: ' . $e->getMessage());
+                    }
+                }
+
+                $attachments[] = [
+                    'path' => $absolutePath,
+                    'name' => $fileName,
+                ];
+                $tempFilesToDelete[] = $tempPath;
+
+                // Create individual delivery log
+                $deliveries[] = DocumentDelivery::create([
+                    'clinic_id' => $patient->clinic_id,
+                    'patient_id' => $patient->id,
+                    'email_account_id' => $account?->id,
+                    'document_type_id' => $documentType->id,
+                    'email_template_id' => $template->id,
+                    'processed_document_id' => null,
+                    'sent_by' => $userId,
+                    'channel' => 'email',
+                    'recipient_email' => $recipientEmail,
+                    'subject' => $this->parseVariables($template->subject_template, $patient),
+                    'attachment_name' => $fileName,
+                    'status' => 'pending',
+                ]);
+            }
+
+            // 2. Parse Template Variables
+            $subject = $this->parseVariables($template->subject_template, $patient);
+            $subject = str_replace(['{{document_name}}', '{document_name}'], $documentType->name, $subject);
+            $subject = str_replace(['{{clinic_name}}', '{clinic_name}'], $patient->clinic->name ?? config('app.name'), $subject);
+
+            $htmlBody = $this->parseVariables($template->html_body, $patient);
+            $htmlBody = str_replace(['{{document_name}}', '{document_name}'], $documentType->name, $htmlBody);
+            $htmlBody = str_replace(['{{clinic_name}}', '{clinic_name}'], $patient->clinic->name ?? config('app.name'), $htmlBody);
+
+            // 3. Send Single Email with all attachments
+            try {
+                $this->mailerService->setMailer($account);
+                $mailer = $this->mailerService->getMailer();
+
+                $mailer->html($htmlBody, function (Message $message) use ($recipientEmail, $subject, $attachments, $account) {
+                    $message->to($recipientEmail)
+                            ->subject($subject)
+                            ->from($account->email_address, $account->name);
+                    
+                    foreach ($attachments as $att) {
+                        $message->attach($att['path'], [
+                            'as' => $att['name'],
+                            'mime' => mime_content_type($att['path']),
+                        ]);
+                    }
+                });
+
+                // Update status of all deliveries to sent
+                foreach ($deliveries as $delivery) {
+                    $delivery->update([
+                        'status' => 'sent',
+                        'sent_at' => now(),
+                    ]);
+
+                    $this->auditLogService->logCreated('DocumentDelivery', $delivery->id, [
+                        'action' => 'Sent Document Email (Multi)',
+                        'patient' => $patient->name,
+                        'document' => $documentType->name,
+                    ]);
+                }
+
+            } catch (\Exception $e) {
+                Log::error('Failed to send multi-uploaded-file email: ' . $e->getMessage());
+
+                // Update status of all deliveries to failed
+                foreach ($deliveries as $delivery) {
+                    $delivery->update([
+                        'status' => 'failed',
+                        'error_message' => $e->getMessage(),
+                    ]);
+
+                    $this->auditLogService->logCreated('DocumentDeliveryFailed', $delivery->id, [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                // Clean up temp files
+                foreach ($tempFilesToDelete as $tempPath) {
+                    Storage::disk('local')->delete($tempPath);
+                }
+
+                throw $e;
+            }
+
+            // Clean up temp files
+            foreach ($tempFilesToDelete as $tempPath) {
+                Storage::disk('local')->delete($tempPath);
+            }
+        }
+
+        return $deliveries;
+    }
 }

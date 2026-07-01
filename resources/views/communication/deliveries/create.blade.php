@@ -269,7 +269,7 @@
                             </div>
                             <button type="button" onclick="resetToUpload()" class="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">Ganti File</button>
                         </div>
-                        <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf">
+                        <input id="document_pdf" name="document_pdfs[]" type="file" class="sr-only" accept="application/pdf" multiple>
                     @else
                         <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Upload Dokumen PDF</label>
                         <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-slate-700 px-6 py-10 bg-slate-50 dark:bg-slate-800/50">
@@ -280,7 +280,7 @@
                                 <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
                                     <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
                                         <span>Pilih file PDF</span>
-                                        <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf" required>
+                                        <input id="document_pdf" name="document_pdfs[]" type="file" class="sr-only" accept="application/pdf" multiple required>
                                     </label>
                                     <p class="pl-1">atau tarik dan lepas ke sini</p>
                                 </div>
@@ -338,7 +338,11 @@
     });
     document.getElementById('document_pdf').addEventListener('change', function(e) {
         if(e.target.files.length > 0) {
-            document.getElementById('file-name-display').innerText = 'File dipilih: ' + e.target.files[0].name;
+            let fileNames = [];
+            for (let i = 0; i < e.target.files.length; i++) {
+                fileNames.push(e.target.files[i].name);
+            }
+            document.getElementById('file-name-display').innerText = 'File terpilih (' + e.target.files.length + '): ' + fileNames.join(', ');
             document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
         }
     });
@@ -508,7 +512,7 @@
                     <div class="mt-4 flex justify-center text-sm leading-6 text-slate-600 dark:text-slate-400">
                         <label for="document_pdf" class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
                             <span>Pilih file PDF</span>
-                            <input id="document_pdf" name="document_pdf" type="file" class="sr-only" accept="application/pdf" required>
+                            <input id="document_pdf" name="document_pdfs[]" type="file" class="sr-only" accept="application/pdf" multiple required>
                         </label>
                         <p class="pl-1">atau tarik dan lepas ke sini</p>
                     </div>
@@ -519,7 +523,11 @@
         
         document.getElementById('document_pdf').addEventListener('change', function(e) {
             if(e.target.files.length > 0) {
-                document.getElementById('file-name-display').innerText = 'File dipilih: ' + e.target.files[0].name;
+                let fileNames = [];
+                for (let i = 0; i < e.target.files.length; i++) {
+                    fileNames.push(e.target.files[i].name);
+                }
+                document.getElementById('file-name-display').innerText = 'File terpilih (' + e.target.files.length + '): ' + fileNames.join(', ');
                 document.getElementById('file-name-display').classList.add('text-primary-600', 'font-medium');
             }
         });

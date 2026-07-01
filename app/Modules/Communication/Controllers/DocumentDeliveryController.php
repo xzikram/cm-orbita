@@ -72,13 +72,19 @@ class DocumentDeliveryController extends Controller
             'email_account_id' => 'required_if:channel,email|nullable|exists:email_accounts,id',
             'recipient_email' => 'required_if:channel,email|nullable|email',
             'recipient_phone' => 'required_if:channel,whatsapp|nullable|string',
-            'document_pdf' => 'required_without_all:processed_document_id,processed_document_ids|nullable|file|mimes:pdf|max:10240', // Max 10MB
-            'processed_document_id' => 'required_without_all:document_pdf,processed_document_ids|nullable|exists:processed_documents,id',
+            'document_pdf' => 'nullable|file|mimes:pdf|max:10240',
+            'document_pdfs' => 'nullable|array',
+            'document_pdfs.*' => 'file|mimes:pdf|max:10240',
+            'processed_document_id' => 'nullable|exists:processed_documents,id',
             'processed_document_ids' => 'nullable|array',
             'processed_document_ids.*' => 'exists:processed_documents,id',
             'password_protect' => 'nullable|boolean',
             'manual_dob' => 'nullable|date',
         ]);
+
+        if (!$request->hasFile('document_pdf') && !$request->hasFile('document_pdfs') && !$request->filled('processed_document_id') && !$request->filled('processed_document_ids')) {
+            return back()->withInput()->with('error', 'Silakan pilih atau unggah dokumen PDF terlebih dahulu.');
+        }
 
         $patientId = $request->patient_id;
         
@@ -128,21 +134,12 @@ class DocumentDeliveryController extends Controller
                 ->get();
         }
 
-        $file = null;
-        if ($processedDocs->isEmpty()) {
-            if ($request->filled('processed_document_id')) {
-                $processedDoc = \App\Models\ProcessedDocument::findOrFail($request->processed_document_id);
-                $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($processedDoc->generated_file_path);
-                $file = new \Illuminate\Http\UploadedFile(
-                    $filePath,
-                    $processedDoc->original_filename ?? basename($processedDoc->generated_file_path),
-                    'application/pdf',
-                    null,
-                    true // test mode
-                );
-            } else {
-                $file = $request->file('document_pdf');
-            }
+        // Gather all files to send (either ProcessedDocument or UploadedFiles)
+        $uploadedFiles = [];
+        if ($request->hasFile('document_pdfs')) {
+            $uploadedFiles = $request->file('document_pdfs');
+        } elseif ($request->hasFile('document_pdf')) {
+            $uploadedFiles = [$request->file('document_pdf')];
         }
 
         // Validasi koneksi WhatsApp Gateway jika mengirim lewat WA
@@ -184,13 +181,44 @@ class DocumentDeliveryController extends Controller
                         'document_type_id' => $doc->document_type_id ?? $documentType->id,
                     ]);
                 }
+            } elseif (count($uploadedFiles) > 1) {
+                $deliveries = $this->deliveryService->sendMultipleUploadedFiles(
+                    patient: $patient,
+                    documentType: $documentType,
+                    template: $template,
+                    account: $account,
+                    files: $uploadedFiles,
+                    recipientEmail: $request->recipient_email,
+                    userId: Auth::id(),
+                    channel: $request->channel,
+                    recipientPhone: $request->recipient_phone,
+                    password: $password
+                );
             } else {
+                $singleFile = count($uploadedFiles) === 1 ? $uploadedFiles[0] : null;
+
+                if (!$singleFile && $request->filled('processed_document_id')) {
+                    $processedDoc = \App\Models\ProcessedDocument::findOrFail($request->processed_document_id);
+                    $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($processedDoc->generated_file_path);
+                    $singleFile = new \Illuminate\Http\UploadedFile(
+                        $filePath,
+                        $processedDoc->original_filename ?? basename($processedDoc->generated_file_path),
+                        'application/pdf',
+                        null,
+                        true // test mode
+                    );
+                }
+
+                if (!$singleFile) {
+                    throw new \Exception('Dokumen tidak ditemukan.');
+                }
+
                 $delivery = $this->deliveryService->sendDocument(
                     patient: $patient,
                     documentType: $documentType,
                     template: $template,
                     account: $account,
-                    file: $file,
+                    file: $singleFile,
                     recipientEmail: $request->recipient_email,
                     userId: Auth::id(),
                     channel: $request->channel,
