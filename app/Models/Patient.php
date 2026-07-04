@@ -14,18 +14,31 @@ class Patient extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'clinic_id', 'medical_record_number', 'name', 'phone',
+        'clinic_id', 'medical_record_number', 'temporary_medical_record_number', 'name', 'nik', 'phone',
         'email', 'gender', 'date_of_birth', 'address', 'notes', 'is_active',
+        'is_downtime_entry', 'parent_spouse_name', 'emergency_contact_name', 'emergency_contact_phone',
+        'registration_source', 'registration_source_id',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'is_active' => 'boolean',
+        'is_downtime_entry' => 'boolean',
     ];
 
     public function clinic(): BelongsTo
     {
         return $this->belongsTo(Clinic::class);
+    }
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class, 'registration_source_id');
+    }
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(MarketingCampaign::class, 'registration_source_id');
     }
 
     public function examinations(): HasMany

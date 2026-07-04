@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Auth;
 
 class DocumentDeliveryController extends Controller
 {
-    public function __construct(protected DocumentDeliveryService $deliveryService) {}
+    public function __construct(
+        protected DocumentDeliveryService $deliveryService,
+        protected \App\Core\Services\PatientRegistrationService $registrationService
+    ) {}
 
     public function index()
     {
@@ -91,36 +94,22 @@ class DocumentDeliveryController extends Controller
         if (is_numeric($patientId)) {
             $patient = Patient::findOrFail($patientId);
         } else {
-            // Create a new Patient on the fly
-            $patient = Patient::where('clinic_id', Auth::user()->clinic_id)
-                ->where('name', $patientId)
-                ->first();
-                
-            if (!$patient) {
-                $mrn = 'RM-' . date('Ymd') . '-' . rand(1000, 9999);
-                while (Patient::where('clinic_id', Auth::user()->clinic_id)->where('medical_record_number', $mrn)->exists()) {
-                    $mrn = 'RM-' . date('Ymd') . '-' . rand(1000, 9999);
+            $dob = null;
+            if ($request->filled('manual_dob')) {
+                try {
+                    $dob = \Carbon\Carbon::parse($request->manual_dob)->format('Y-m-d');
+                } catch (\Exception $e) {
+                    // ignore
                 }
-                
-                $dob = null;
-                if ($request->filled('manual_dob')) {
-                    try {
-                        $dob = \Carbon\Carbon::parse($request->manual_dob);
-                    } catch (\Exception $e) {
-                        // ignore
-                    }
-                }
-
-                $patient = Patient::create([
-                    'clinic_id' => Auth::user()->clinic_id,
-                    'name' => $patientId,
-                    'medical_record_number' => $mrn,
-                    'phone' => $request->recipient_phone,
-                    'email' => $request->recipient_email,
-                    'date_of_birth' => $dob,
-                    'is_active' => true,
-                ]);
             }
+
+            $patient = $this->registrationService->register([
+                'name' => $patientId,
+                'phone' => $request->recipient_phone,
+                'email' => $request->recipient_email,
+                'date_of_birth' => $dob,
+                'registration_source' => 'document_delivery'
+            ]);
         }
 
         $documentType = DocumentType::findOrFail($request->document_type_id);

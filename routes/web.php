@@ -16,6 +16,16 @@ Route::get('/', fn() => redirect()->route('login'));
 // ── Public Verification Route (DPC) ──
 Route::get('/verify/{uuid}', [\App\Modules\Document\Controllers\DocumentVerificationController::class, 'verify'])->name('dpc.verify');
 
+// ── Public Event Registration ──
+Route::get('/e/{code}', [\App\Modules\FollowUp\Controllers\EventController::class, 'registerForm'])->name('events.register');
+Route::post('/e/{code}', [\App\Modules\FollowUp\Controllers\EventController::class, 'registerSubmit'])->name('events.register.submit');
+Route::get('/e/{code}/ticket/{patient}', [\App\Modules\FollowUp\Controllers\EventController::class, 'ticket'])->name('events.ticket');
+
+// ── Public Campaign Links ──
+Route::get('/promo/{code}', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'trackAndRedirect'])->name('campaign.track');
+Route::post('/promo/{code}/register', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'registerSubmit'])->name('campaign.register.submit');
+Route::get('/promo/{code}/success/{patient}', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'success'])->name('campaign.success');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
@@ -43,14 +53,42 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Follow-Up Module ──
     Route::prefix('follow-up')->name('follow-up.')->group(function () {
-        // Patients
+        // Patients Export & Import Mapping
+        Route::get('patients/export-csv', [PatientController::class, 'exportCsv'])
+            ->name('patients.export-csv')
+            ->middleware('permission:patients.view');
+        Route::get('patients/import-mapping', [PatientController::class, 'showImportForm'])
+            ->name('patients.import-mapping')
+            ->middleware('permission:patients.view');
+        Route::post('patients/import-mapping', [PatientController::class, 'importNewMrMapping'])
+            ->name('patients.store-import-mapping')
+            ->middleware('permission:patients.view');
+        Route::put('patients/{patient}/quick-update-rm', [PatientController::class, 'quickUpdateRm'])
+            ->name('patients.quick-update-rm')
+            ->middleware('permission:patients.view');
+
         Route::post('patients/delete-all', [PatientController::class, 'deleteAll'])
             ->name('patients.deleteAll')
             ->middleware('permission:patients.view');
         Route::resource('patients', PatientController::class)
             ->middleware('permission:patients.view');
 
-        // Examinations
+        // Examinations Export & Import
+        Route::get('examinations/export-csv', [ExaminationController::class, 'exportCsv'])
+            ->name('examinations.export-csv')
+            ->middleware('permission:examinations.view');
+        Route::get('examinations/import', [ExaminationController::class, 'showImportForm'])
+            ->name('examinations.import')
+            ->middleware('permission:examinations.view');
+        Route::post('examinations/import', [ExaminationController::class, 'importMapping'])
+            ->name('examinations.store-import')
+            ->middleware('permission:examinations.view');
+        Route::get('examinations/create-downtime', [ExaminationController::class, 'createDowntime'])
+            ->name('examinations.create-downtime')
+            ->middleware('permission:examinations.view');
+        Route::post('examinations/store-downtime', [ExaminationController::class, 'storeDowntime'])
+            ->name('examinations.store-downtime')
+            ->middleware('permission:examinations.view');
         Route::resource('examinations', ExaminationController::class)
             ->only(['index', 'create', 'store', 'show'])
             ->middleware('permission:examinations.view');
@@ -71,6 +109,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('schedules/{schedule}/record', [FollowUpScheduleController::class, 'storeVisit'])
             ->name('schedules.store-visit')
             ->middleware('permission:follow-up.record-visit');
+
+        // Events
+        Route::resource('events', \App\Modules\FollowUp\Controllers\EventController::class)
+            ->middleware('permission:patients.view');
+        Route::patch('events/{event}/toggle-active', [\App\Modules\FollowUp\Controllers\EventController::class, 'toggleActive'])
+            ->name('events.toggle-active')
+            ->middleware('permission:patients.view');
+
+        // Campaigns
+        Route::resource('campaigns', \App\Modules\FollowUp\Controllers\CampaignController::class)
+            ->middleware('permission:patients.view');
+        Route::patch('campaigns/{campaign}/toggle-active', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'toggleActive'])
+            ->name('campaigns.toggle-active')
+            ->middleware('permission:patients.view');
     });
 
     // ── Reminders ──

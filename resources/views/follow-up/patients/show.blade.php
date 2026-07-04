@@ -14,9 +14,13 @@
                     </div>
                 </div>
                 <div class="mt-4 text-center sm:mt-0 sm:pt-1 sm:text-left">
-                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">No. RM: {{ $patient->medical_record_number }}</p>
-                    <p class="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{{ $patient->name }}</p>
-                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">{{ $patient->phone ?? '-' }} • {{ $patient->email ?? '-' }}</p>
+                    <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap mb-1">
+                        <p class="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{{ $patient->name }}</p>
+                        @if($patient->is_downtime_entry)
+                            <span class="badge-yellow text-[10px] py-0.5 px-2 font-bold uppercase tracking-wide">Downtime SIMRS</span>
+                        @endif
+                    </div>
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">No. RM: {{ $patient->medical_record_number }} | HP: {{ $patient->phone ?? '-' }}</p>
                 </div>
             </div>
             <div class="mt-5 flex justify-center gap-3 sm:mt-0">
@@ -38,6 +42,57 @@
         
         <!-- Kolom Kiri: Riwayat Pemeriksaan -->
         <div class="lg:col-span-2 space-y-6">
+            <!-- Profil Pasien Card -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">Profil Pasien</h3>
+                    <a href="{{ route('follow-up.patients.edit', $patient) }}" class="table-action-edit">Edit Profil</a>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">NIK (No. KTP)</span>
+                        <span class="text-slate-800 dark:text-slate-200 font-mono">{{ $patient->nik ?? '-' }}</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">No. Rekam Medis</span>
+                        <span class="text-slate-800 dark:text-slate-200 font-mono font-bold">{{ $patient->medical_record_number }}</span>
+                        @if($patient->temporary_medical_record_number)
+                            <span class="block text-[10px] text-amber-600 dark:text-amber-400 font-mono mt-0.5">Sebelumnya: {{ $patient->temporary_medical_record_number }}</span>
+                        @endif
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Jenis Kelamin</span>
+                        <span class="text-slate-800 dark:text-slate-200">{{ $patient->gender == 'L' ? 'Laki-laki' : ($patient->gender == 'P' ? 'Perempuan' : '-') }}</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Tanggal Lahir / Umur</span>
+                        <span class="text-slate-800 dark:text-slate-200">{{ $patient->date_of_birth ? $patient->date_of_birth->format('d F Y') . ' (' . $patient->age . ' tahun)' : '-' }}</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Orangtua / Pasangan</span>
+                        <span class="text-slate-800 dark:text-slate-200">{{ $patient->parent_spouse_name ?? '-' }}</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Nomor HP/WA</span>
+                        <span class="text-slate-800 dark:text-slate-200">{{ $patient->phone ?? '-' }}</span>
+                    </div>
+                    <div class="md:col-span-2">
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Alamat Lengkap</span>
+                        <span class="text-slate-800 dark:text-slate-200">{{ $patient->address ?? '-' }}</span>
+                    </div>
+                    <div class="border-t border-slate-100 dark:border-slate-800 pt-3 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Kontak Darurat (Nama)</span>
+                            <span class="text-slate-800 dark:text-slate-200 font-bold">{{ $patient->emergency_contact_name ?? '-' }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">No. HP Kontak Darurat</span>
+                            <span class="text-slate-800 dark:text-slate-200 font-mono">{{ $patient->emergency_contact_phone ?? '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card p-6">
                 <h3 class="text-lg font-medium leading-6 text-slate-900 dark:text-white mb-4">Riwayat Pemeriksaan</h3>
                 @if($patient->examinations->isEmpty())

@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Hubungkan data lama berdasarkan pencocokan nama file, generated path, atau UUID
-        \Illuminate\Support\Facades\DB::statement("
-            UPDATE document_deliveries d
-            JOIN processed_documents p ON (
-                d.attachment_name = p.original_filename 
-                OR d.attachment_name = SUBSTRING_INDEX(p.generated_file_path, '/', -1)
-                OR d.attachment_path LIKE CONCAT('%', p.uuid, '%')
-            )
-            SET d.processed_document_id = p.id
-            WHERE d.processed_document_id IS NULL
-        ");
+        if (\Illuminate\Support\Facades\DB::getDriverName() === 'mysql') {
+            // Hubungkan data lama berdasarkan pencocokan nama file, generated path, atau UUID
+            \Illuminate\Support\Facades\DB::statement("
+                UPDATE document_deliveries d
+                JOIN processed_documents p ON (
+                    d.attachment_name = p.original_filename 
+                    OR d.attachment_name = SUBSTRING_INDEX(p.generated_file_path, '/', -1)
+                    OR d.attachment_path LIKE CONCAT('%', p.uuid, '%')
+                )
+                SET d.processed_document_id = p.id
+                WHERE d.processed_document_id IS NULL
+            ");
+        }
     }
 
     /**

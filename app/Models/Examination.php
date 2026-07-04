@@ -19,14 +19,18 @@ class Examination extends Model
         'os_sphere', 'os_cylinder', 'os_axis', 'os_visus',
         'lens_type', 'lens_brand', 'lens_power_od', 'lens_power_os',
         'clinical_notes', 'status',
+        'is_downtime_entry', 'patient_status', 'registration_date', 'registration_number', 'guarantor', 'service_unit', 'tindakan', 'queue_number', 'total_payment',
     ];
 
     protected $casts = [
         'examination_date' => 'date',
+        'registration_date' => 'date',
         'od_sphere' => 'decimal:2',
         'od_cylinder' => 'decimal:2',
         'os_sphere' => 'decimal:2',
         'os_cylinder' => 'decimal:2',
+        'is_downtime_entry' => 'boolean',
+        'total_payment' => 'decimal:2',
     ];
 
     // ── Relationships ──

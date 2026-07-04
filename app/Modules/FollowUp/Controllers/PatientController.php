@@ -7,6 +7,7 @@ use App\Models\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class PatientController extends Controller
 {
@@ -18,6 +19,14 @@ class PatientController extends Controller
 
         if ($search = $request->get('search')) {
             $query->search($search);
+        }
+
+        if ($request->filled('downtime')) {
+            $query->where('is_downtime_entry', $request->boolean('downtime'));
+        }
+
+        if ($request->filled('registration_source')) {
+            $query->where('registration_source', $request->get('registration_source'));
         }
 
         $patients = $query->withCount('examinations')
@@ -35,17 +44,28 @@ class PatientController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'medical_record_number' => 'required|string|max:50',
+            'medical_record_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('patients', 'medical_record_number')
+                    ->where('clinic_id', Auth::user()->clinic_id)
+            ],
             'name' => 'required|string|max:255',
+            'nik' => 'nullable|string|max:16',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'gender' => 'nullable|in:L,P',
             'date_of_birth' => 'nullable|date',
             'address' => 'nullable|string|max:500',
             'notes' => 'nullable|string|max:1000',
+            'parent_spouse_name' => 'nullable|string|max:255',
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_phone' => 'nullable|string|max:20',
         ]);
 
         $validated['clinic_id'] = Auth::user()->clinic_id;
+        $validated['is_downtime_entry'] = $request->boolean('is_downtime_entry');
 
         $patient = Patient::create($validated);
         $this->auditLogService->logCreated('Patient', $patient->id, $validated);
@@ -132,15 +152,28 @@ class PatientController extends Controller
         abort_if($patient->clinic_id !== Auth::user()->clinic_id, 403);
 
         $validated = $request->validate([
-            'medical_record_number' => 'required|string|max:50',
+            'medical_record_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('patients', 'medical_record_number')
+                    ->where('clinic_id', Auth::user()->clinic_id)
+                    ->ignore($patient->id)
+            ],
             'name' => 'required|string|max:255',
+            'nik' => 'nullable|string|max:16',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'gender' => 'nullable|in:L,P',
             'date_of_birth' => 'nullable|date',
             'address' => 'nullable|string|max:500',
             'notes' => 'nullable|string|max:1000',
+            'parent_spouse_name' => 'nullable|string|max:255',
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_phone' => 'nullable|string|max:20',
         ]);
+
+        $validated['is_downtime_entry'] = $request->boolean('is_downtime_entry');
 
         $old = $patient->toArray();
         $patient->update($validated);
@@ -215,5 +248,350 @@ class PatientController extends Controller
             \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
             return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
+    }
+
+    public function exportCsv(Request $request)
+    {
+        $query = Patient::where('clinic_id', Auth::user()->clinic_id);
+
+        if ($search = $request->get('search')) {
+            $query->search($search);
+        }
+
+        if ($request->filled('downtime')) {
+            $query->where('is_downtime_entry', $request->boolean('downtime'));
+        } else {
+            $query->where(function($q) {
+                $q->where('is_downtime_entry', true)
+                  ->orWhere('medical_record_number', 'like', 'TEMP-%')
+                  ->orWhereRaw("medical_record_number REGEXP '^[0-9]{8}-[0-9]{6}$'");
+            });
+        }
+
+        $patients = $query->orderBy('name')->get();
+
+        $belumUpdate = [];
+        $sudahUpdate = [];
+
+        foreach ($patients as $p) {
+            $isTemp = str_starts_with($p->medical_record_number, 'TEMP-') || preg_match('/^\d{8}-\d{6}$/', $p->medical_record_number);
+            if ($isTemp) {
+                $belumUpdate[] = $p;
+            } else {
+                $sudahUpdate[] = $p;
+            }
+        }
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="laporan_pasien_downtime_' . date('Ymd_His') . '.xls"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $xmlEscape = function($val) {
+            return htmlspecialchars($val ?? '', ENT_XML1, 'UTF-8');
+        };
+
+        $callback = function() use ($belumUpdate, $sudahUpdate, $xmlEscape) {
+            $xml = '<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>CFMS</Author>
+  <LastAuthor>CFMS</LastAuthor>
+  <Created>' . date('Y-m-d\TH:i:s\Z') . '</Created>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#1E3A8A" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>';
+
+            // Sheet 1: Belum Update RM
+            $xml .= ' <Worksheet ss:Name="Belum Update RM">
+  <Table>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. RM Sementara</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">NIK</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pasien</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Jenis Kelamin</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Orangtua/Pasangan</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Emergency Contact</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon Emergency Contact</Data></Cell>
+   </Row>';
+            foreach ($belumUpdate as $p) {
+                $xml .= '   <Row>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->nik) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->gender == 'L' ? 'Laki-laki' : ($p->gender == 'P' ? 'Perempuan' : '')) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->parent_spouse_name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_phone) . '</Data></Cell>
+   </Row>';
+            }
+            $xml .= '  </Table>
+ </Worksheet>';
+
+            // Sheet 2: Sudah Update RM
+            $xml .= ' <Worksheet ss:Name="Sudah Update RM">
+  <Table>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. RM Sementara</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. RM Resmi</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">NIK</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pasien</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Jenis Kelamin</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Orangtua/Pasangan</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Emergency Contact</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon Emergency Contact</Data></Cell>
+   </Row>';
+            foreach ($sudahUpdate as $p) {
+                $xml .= '   <Row>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->temporary_medical_record_number ?? '-') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->nik) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->gender == 'L' ? 'Laki-laki' : ($p->gender == 'P' ? 'Perempuan' : '')) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->parent_spouse_name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_phone) . '</Data></Cell>
+   </Row>';
+            }
+            $xml .= '  </Table>
+ </Worksheet>';
+
+            $xml .= '</Workbook>';
+            echo $xml;
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function showImportForm()
+    {
+        return view('follow-up.patients.import-mapping');
+    }
+
+    public function importNewMrMapping(Request $request)
+    {
+        $request->validate([
+            'file' => 'nullable|file|mimes:csv,txt|max:2048',
+            'text' => 'nullable|string',
+        ]);
+
+        if (!$request->hasFile('file') && !$request->filled('text')) {
+            return redirect()->back()->with('error', 'Silakan pilih berkas CSV atau tempel teks dari Excel.');
+        }
+
+        $clinicId = Auth::user()->clinic_id;
+        $updatedCount = 0;
+        $errors = [];
+        $mappings = [];
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->getRealPath();
+            
+            $handle = fopen($path, 'r');
+            if ($handle === false) {
+                 return redirect()->back()->with('error', 'Gagal membuka file CSV.');
+            }
+
+            // Detect separator
+            $firstLine = fgets($handle);
+            $separator = ',';
+            if (str_contains($firstLine, ';')) {
+                $separator = ';';
+            }
+            
+            rewind($handle);
+            
+            $header = fgetcsv($handle, 1000, $separator);
+            if ($header && isset($header[0])) {
+                $header[0] = preg_replace('/[\x{FEFF}\x{200B}]/u', '', $header[0]);
+            }
+
+            $patientIdIndex = 0;
+            $newMrIndex = 1;
+            
+            if ($header) {
+                foreach ($header as $index => $colName) {
+                    $colNameLower = strtolower(trim($colName));
+                    if (in_array($colNameLower, ['patientid', 'patient_id', 'rm_lama', 'no. rm sementara', 'no. rm (sementara/new)'])) {
+                        $patientIdIndex = $index;
+                    }
+                    if (in_array($colNameLower, ['newmr', 'new_mr', 'rm_baru', 'no. rm baru'])) {
+                        $newMrIndex = $index;
+                    }
+                }
+            }
+
+            $rowNum = 1;
+            while (($row = fgetcsv($handle, 1000, $separator)) !== false) {
+                $rowNum++;
+                if (empty($row) || count($row) <= max($patientIdIndex, $newMrIndex)) {
+                    continue;
+                }
+                $mappings[] = [
+                    'row' => $rowNum,
+                    'temp' => trim($row[$patientIdIndex]),
+                    'new' => trim($row[$newMrIndex])
+                ];
+            }
+            fclose($handle);
+        } else {
+            $lines = explode("\n", $request->input('text'));
+            $rowNum = 0;
+            foreach ($lines as $line) {
+                $rowNum++;
+                $line = trim($line);
+                if (empty($line)) continue;
+                
+                // Try splitting by common delimiters
+                $cols = preg_split('/[\t;,|]+/', $line);
+                if (count($cols) < 2) {
+                    // Try splitting by multiple spaces
+                    $cols = preg_split('/\s{2,}/', $line);
+                }
+                
+                if (count($cols) >= 2) {
+                    $mappings[] = [
+                        'row' => $rowNum,
+                        'temp' => trim($cols[0]),
+                        'new' => trim($cols[1])
+                    ];
+                } else {
+                    $errors[] = "Baris {$rowNum}: Format tidak valid. Pastikan data memiliki minimal 2 kolom (RM Sementara & RM Baru).";
+                }
+            }
+        }
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            foreach ($mappings as $map) {
+                $tempMr = $map['temp'];
+                $newMr = $map['new'];
+                $rowNum = $map['row'];
+
+                if (empty($tempMr) || empty($newMr)) {
+                    continue;
+                }
+
+                // Skip header if copy-pasted header text
+                if (strtolower($tempMr) === 'patientid' || strtolower($tempMr) === 'patient_id' || strtolower($tempMr) === 'rm sementara' || strtolower($tempMr) === 'no. rm sementara') {
+                    continue;
+                }
+
+                $patient = Patient::where('clinic_id', $clinicId)
+                    ->where('medical_record_number', $tempMr)
+                    ->first();
+
+                if ($patient) {
+                    $exists = Patient::where('clinic_id', $clinicId)
+                        ->where('medical_record_number', $newMr)
+                        ->where('id', '!=', $patient->id)
+                        ->exists();
+
+                    if ($exists) {
+                        $errors[] = "Baris {$rowNum}: No. RM Baru '{$newMr}' sudah terdaftar untuk pasien lain.";
+                        continue;
+                    }
+
+                    $oldMr = $patient->medical_record_number;
+                    $patient->update([
+                        'medical_record_number' => $newMr,
+                        'temporary_medical_record_number' => $patient->temporary_medical_record_number ?: $oldMr,
+                    ]);
+
+                    $this->auditLogService->logUpdated('Patient', $patient->id, 
+                        ['medical_record_number' => $oldMr], 
+                        ['medical_record_number' => $newMr]
+                    );
+
+                    $updatedCount++;
+                } else {
+                    $errors[] = "Baris {$rowNum}: Pasien dengan No. RM Sementara '{$tempMr}' tidak ditemukan di klinik ini.";
+                }
+            }
+
+            if (count($errors) > 0 && $updatedCount == 0) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                return redirect()->back()->withErrors($errors)->with('error', 'Gagal memproses pemetaan. Silakan periksa detail kesalahan.');
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+        }
+
+        $msg = "Berhasil memperbarui {$updatedCount} Nomor RM Pasien.";
+        if (count($errors) > 0) {
+            return redirect()->route('follow-up.patients.index')
+                ->with('success', $msg)
+                ->with('error_html', 'Beberapa baris dilewati:<br>' . implode('<br>', $errors));
+        }
+
+        return redirect()->route('follow-up.patients.index')->with('success', $msg);
+    }
+
+    public function quickUpdateRm(Request $request, Patient $patient)
+    {
+        abort_if($patient->clinic_id !== Auth::user()->clinic_id, 403);
+
+        $validated = $request->validate([
+            'medical_record_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('patients', 'medical_record_number')
+                    ->where('clinic_id', Auth::user()->clinic_id)
+                    ->ignore($patient->id)
+            ],
+        ]);
+
+        $oldMr = $patient->medical_record_number;
+        $newMr = $validated['medical_record_number'];
+
+        $patient->update([
+            'medical_record_number' => $newMr,
+            'temporary_medical_record_number' => $patient->temporary_medical_record_number ?: $oldMr,
+        ]);
+
+        $this->auditLogService->logUpdated('Patient', $patient->id, 
+            ['medical_record_number' => $oldMr], 
+            ['medical_record_number' => $newMr]
+        );
+
+        return redirect()->back()->with('success', "Nomor RM pasien '{$patient->name}' berhasil diperbarui menjadi '{$newMr}'.");
     }
 }

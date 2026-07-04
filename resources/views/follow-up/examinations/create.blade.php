@@ -39,17 +39,32 @@
         <form action="{{ route('follow-up.examinations.store') }}" method="POST" class="space-y-8">
             @csrf
             
-            <!-- Section 1: Informasi Umum -->
-            <div>
-                <h3 class="text-base font-semibold leading-7 text-slate-900 dark:text-white">1. Informasi Umum</h3>
-                <div class="mt-4 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
+            <!-- Section 1: Informasi Umum & Registrasi -->
+            <div x-data="{ isDowntime: {{ old('is_downtime_entry') ? 'true' : 'false' }} }">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                    <h3 class="text-base font-semibold leading-7 text-slate-900 dark:text-white">1. Informasi Umum</h3>
+                    
+                    <!-- Checkbox Downtime -->
+                    <div class="flex items-center">
+                        <input id="is_downtime_entry" name="is_downtime_entry" type="checkbox" value="1" 
+                            x-model="isDowntime"
+                            {{ old('is_downtime_entry') ? 'checked' : '' }}
+                            class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                        <label for="is_downtime_entry" class="ml-2 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            Pencatatan saat SIMRS Downtime
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
                     <div>
                         <label for="patient_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Pasien *</label>
                         <select id="patient_id" name="patient_id" required class="input-field mt-2">
                             <option value="">-- Pilih Pasien --</option>
                             @foreach($patients as $patient)
                                 <option value="{{ $patient->id }}" {{ (old('patient_id') == $patient->id || (isset($selectedPatient) && $selectedPatient->id == $patient->id)) ? 'selected' : '' }}>
-                                    {{ $patient->name }} (RM: {{ $patient->medical_record_number }})
+                                    {{ $patient->name }} (RM: {{ $patient->medical_record_number }}{{ $patient->temporary_medical_record_number ? ' | Smt: ' . $patient->temporary_medical_record_number : '' }})
                                 </option>
                             @endforeach
                         </select>
@@ -82,6 +97,78 @@
                             @endforeach
                         </select>
                         @error('ro_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
+                <!-- Fields Tambahan Downtime (Toggled by Checkbox) -->
+                <div x-show="isDowntime" x-transition class="mt-6 border-t border-dashed border-amber-200 dark:border-amber-900/60 pt-6">
+                    <h4 class="text-sm font-bold text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-1.5">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Informasi Registrasi & Transaksi Downtime
+                    </h4>
+                    
+                    <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-3">
+                        <div>
+                            <label for="patient_status" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Status Pasien</label>
+                            <select id="patient_status" name="patient_status" class="input-field mt-2">
+                                <option value="">-- Pilih --</option>
+                                <option value="Lama" {{ old('patient_status') == 'Lama' ? 'selected' : '' }}>Pasien Lama</option>
+                                <option value="Baru" {{ old('patient_status') == 'Baru' ? 'selected' : '' }}>Pasien Baru</option>
+                            </select>
+                            @error('patient_status')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="registration_date" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Tanggal Registrasi</label>
+                            <input type="date" name="registration_date" id="registration_date" value="{{ old('registration_date', date('Y-m-d')) }}" class="input-field mt-2">
+                            @error('registration_date')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="registration_number" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">No. Registrasi</label>
+                            <input type="text" name="registration_number" id="registration_number" value="{{ old('registration_number') }}" class="input-field mt-2" placeholder="REG/OP/YYMMDD-XXXX">
+                            @error('registration_number')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="guarantor" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Penjamin (Guarantor)</label>
+                            <select id="guarantor" name="guarantor" class="input-field mt-2">
+                                <option value="">-- Pilih Penjamin --</option>
+                                <option value="PRIBADI" {{ old('guarantor') == 'PRIBADI' ? 'selected' : '' }}>PRIBADI</option>
+                                <option value="ASURANSI" {{ old('guarantor') == 'ASURANSI' ? 'selected' : '' }}>ASURANSI</option>
+                                <option value="YAKESPEN UTAMA" {{ old('guarantor') == 'YAKESPEN UTAMA' ? 'selected' : '' }}>YAKESPEN UTAMA</option>
+                                <option value="INHEALTH" {{ old('guarantor') == 'INHEALTH' ? 'selected' : '' }}>INHEALTH</option>
+                                <option value="PT ADMINISTRASI MEDIKA - INDEMNITY" {{ old('guarantor') == 'PT ADMINISTRASI MEDIKA - INDEMNITY' ? 'selected' : '' }}>PT ADMINISTRASI MEDIKA - INDEMNITY</option>
+                                <option value="INHEALTH INDEMNITY" {{ old('guarantor') == 'INHEALTH INDEMNITY' ? 'selected' : '' }}>INHEALTH INDEMNITY</option>
+                                <option value="PT LINK MEDIS SEHAT" {{ old('guarantor') == 'PT LINK MEDIS SEHAT' ? 'selected' : '' }}>PT LINK MEDIS SEHAT</option>
+                                <option value="EMERGENCY" {{ old('guarantor') == 'EMERGENCY' ? 'selected' : '' }}>EMERGENCY</option>
+                            </select>
+                            @error('guarantor')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="service_unit" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Unit Layanan</label>
+                            <input type="text" name="service_unit" id="service_unit" value="{{ old('service_unit') }}" class="input-field mt-2" placeholder="Misal: EYE CLINIC, OPD">
+                            @error('service_unit')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="tindakan" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Tindakan</label>
+                            <input type="text" name="tindakan" id="tindakan" value="{{ old('tindakan') }}" class="input-field mt-2" placeholder="Misal: Laser Argon, Phaco">
+                            @error('tindakan')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="queue_number" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">No. Antrian</label>
+                            <input type="text" name="queue_number" id="queue_number" value="{{ old('queue_number') }}" class="input-field mt-2" placeholder="Misal: 15">
+                            @error('queue_number')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="total_payment" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Jumlah Pembayaran (Rp)</label>
+                            <input type="number" step="0.01" name="total_payment" id="total_payment" value="{{ old('total_payment') }}" class="input-field mt-2" placeholder="Misal: 1042500">
+                            @error('total_payment')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
                     </div>
                 </div>
             </div>
