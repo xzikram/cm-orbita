@@ -46,6 +46,7 @@ class DoctorController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'initials' => 'nullable|string|max:10',
             'sip_number' => 'nullable|string|max:50',
             'specialization' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
@@ -76,6 +77,7 @@ class DoctorController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'initials' => 'nullable|string|max:10',
             'sip_number' => 'nullable|string|max:50',
             'specialization' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',

@@ -22,12 +22,21 @@
             
             <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
                 <!-- Name -->
-                <div class="sm:col-span-2">
+                <div class="sm:col-span-1">
                     <label for="name" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Nama Lengkap Dokter *</label>
                     <div class="mt-2">
                         <input type="text" name="name" id="name" required value="{{ old('name') }}" class="input-field" placeholder="Lengkap dengan gelar">
                     </div>
                     @error('name')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <!-- Initials -->
+                <div class="sm:col-span-1">
+                    <label for="initials" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Singkatan / Inisial</label>
+                    <div class="mt-2">
+                        <input type="text" name="initials" id="initials" value="{{ old('initials') }}" class="input-field" placeholder="Misal: AB, AJ, AL...">
+                    </div>
+                    @error('initials')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <!-- Specialization -->

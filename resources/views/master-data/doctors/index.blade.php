@@ -54,6 +54,7 @@
             <thead>
                 <tr>
                     <th>Nama Dokter</th>
+                    <th>Singkatan</th>
                     <th>Spesialisasi</th>
                     <th>SIP</th>
                     <th>Kontak</th>
@@ -66,6 +67,9 @@
                     <tr>
                         <td class="font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                             {{ $doctor->name }}
+                        </td>
+                        <td class="font-semibold font-mono text-xs text-slate-700 dark:text-slate-300">
+                            {{ $doctor->initials ?? '-' }}
                         </td>
                         <td class="text-slate-500 dark:text-slate-400">{{ $doctor->specialization ?? '-' }}</td>
                         <td class="text-slate-500 dark:text-slate-400 font-mono text-xs">{{ $doctor->sip_number ?? '-' }}</td>
