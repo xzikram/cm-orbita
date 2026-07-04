@@ -93,10 +93,17 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
                         Buka Halaman Pendaftaran
                     </a>
-                    <button onclick="printQRCode()" class="btn-secondary w-full text-center flex justify-center items-center gap-2">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.82l2.68-2.68m0 0l2.68 2.68M9.4 11.14v6.48m5.4-9.36a6 6 0 11-10.8 3.6M15 12h.008v.008H15V12z" /></svg>
-                        Cetak Poster QR
-                    </button>
+                    
+                    <div class="grid grid-cols-2 gap-2 w-full">
+                        <button onclick="printQRCode('A4')" class="btn-secondary text-center flex justify-center items-center gap-1.5 py-2 text-xs font-semibold" title="Cetak Poster ukuran kertas A4">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.82l2.68-2.68m0 0l2.68 2.68M9.4 11.14v6.48m5.4-9.36a6 6 0 11-10.8 3.6M15 12h.008v.008H15V12z" /></svg>
+                            Cetak A4
+                        </button>
+                        <button onclick="printQRCode('A5')" class="btn-secondary text-center flex justify-center items-center gap-1.5 py-2 text-xs font-semibold" title="Cetak Poster ukuran kertas A5">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.82l2.68-2.68m0 0l2.68 2.68M9.4 11.14v6.48m5.4-9.36a6 6 0 11-10.8 3.6M15 12h.008v.008H15V12z" /></svg>
+                            Cetak A5
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -164,38 +171,64 @@
 
 <!-- Print Only Area for QR Code -->
 <div id="print-area" class="hidden">
-    <div style="text-align: center; padding: 60px 40px; font-family: 'Inter', sans-serif; background: white;">
+    <div id="print-layout-container">
         <!-- Logo JEC-ORBITA -->
-        <img src="/Logo RS JEC ORBITA.png" onerror="this.src='/logo.png'" style="height: 80px; object-fit: contain; margin-bottom: 24px; display: inline-block;">
+        <img src="/Logo RS JEC ORBITA.png" onerror="this.src='/logo.png'" class="logo-header">
         
         <br>
         <!-- Registrasi Capsule -->
-        <div style="background-color: #1b4e80; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-radius: 9999px; padding: 14px 56px; font-size: 32px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(27,78,128,0.2);">
+        <div class="registrasi-badge" style="background-color: #1b4e80; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-radius: 9999px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; box-shadow: 0 4px 6px rgba(27,78,128,0.2);">
             REGISTRASI
         </div>
         
         <!-- Code & Location -->
-        <div style="font-size: 18px; font-weight: 700; color: #475569; margin-bottom: 36px; text-transform: uppercase; letter-spacing: 0.02em;">
+        <div class="event-subtitle" style="font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.02em;">
             {{ $event->code }} - {{ $event->location }}
         </div>
 
         <!-- QR Code with Center Logo -->
-        <div style="position: relative; display: inline-block; background: white; padding: 16px; border-radius: 24px; border: 2px solid #e2e8f0; box-shadow: 0 6px 12px rgba(0,0,0,0.05);">
-            <img src="{{ $qrcodeBase64 }}" style="width: 320px; height: 320px; display: block;">
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
-                <img src="/jec-logo.png" style="width: 48px; height: auto;">
+        <div class="qrcode-box" style="position: relative; display: inline-block; background: white; border: 2px solid #e2e8f0; box-shadow: 0 6px 12px rgba(0,0,0,0.05);">
+            <img src="{{ $qrcodeBase64 }}" class="qrcode-img" style="display: block;">
+            <div class="center-logo-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                <img src="/jec-logo.png" class="center-logo-img" style="height: auto;">
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    function printQRCode() {
+    function printQRCode(size) {
         var printContents = document.getElementById("print-area").innerHTML;
         
         var printWindow = window.open('', '_blank');
         printWindow.document.write('<html><head><title>Cetak QR Code Event</title>');
         printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">');
+        printWindow.document.write('<style>');
+        printWindow.document.write('    @page { size: ' + size + ' portrait; margin: 0; }');
+        printWindow.document.write('    body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: white; font-family: "Inter", sans-serif; box-sizing: border-box; }');
+        
+        if (size === 'A4') {
+            printWindow.document.write('    #print-layout-container { width: 210mm; height: 297mm; padding: 40mm 20mm; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }');
+            printWindow.document.write('    .logo-header { height: 110px; object-fit: contain; margin-bottom: 24px; display: inline-block; }');
+            printWindow.document.write('    .registrasi-badge { padding: 20px 80px; font-size: 48px; margin-bottom: 20px; }');
+            printWindow.document.write('    .event-subtitle { font-size: 24px; margin-bottom: 48px; }');
+            printWindow.document.write('    .qrcode-box { width: 500px; height: 500px; padding: 24px; border-radius: 36px; }');
+            printWindow.document.write('    .qrcode-img { width: 452px; height: 452px; }');
+            printWindow.document.write('    .center-logo-box { width: 90px; height: 90px; border-radius: 16px; }');
+            printWindow.document.write('    .center-logo-img { width: 70px; }');
+        } else {
+            // A5 Size Configuration
+            printWindow.document.write('    #print-layout-container { width: 148mm; height: 210mm; padding: 20mm 15mm; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }');
+            printWindow.document.write('    .logo-header { height: 75px; object-fit: contain; margin-bottom: 16px; display: inline-block; }');
+            printWindow.document.write('    .registrasi-badge { padding: 12px 48px; font-size: 32px; margin-bottom: 12px; }');
+            printWindow.document.write('    .event-subtitle { font-size: 16px; margin-bottom: 24px; }');
+            printWindow.document.write('    .qrcode-box { width: 340px; height: 340px; padding: 16px; border-radius: 24px; }');
+            printWindow.document.write('    .qrcode-img { width: 308px; height: 308px; }');
+            printWindow.document.write('    .center-logo-box { width: 64px; height: 64px; border-radius: 12px; }');
+            printWindow.document.write('    .center-logo-img { width: 50px; }');
+        }
+        
+        printWindow.document.write('</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContents);
         printWindow.document.write('</body></html>');
