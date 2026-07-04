@@ -65,7 +65,7 @@
                 </div>
 
                 <div id="qrcode-container" class="bg-white p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center">
-                    <div id="qrcode"></div>
+                    <img src="{{ $qrcodeBase64 }}" alt="QR Code Pendaftaran Mandiri" class="h-44 w-44">
                 </div>
 
                 <div class="w-full space-y-2">
@@ -150,43 +150,18 @@
         <p style="font-size: 14px; margin-bottom: 40px; color: #64748b; max-width: 400px; margin-left: auto; margin-right: auto;">
             Scan QR Code ini menggunakan HP Anda untuk melakukan pendaftaran pemeriksaan mata gratis secara mandiri di lokasi acara.
         </p>
-        <div id="print-qrcode" style="display: inline-block; padding: 20px; border: 2px solid #e2e8f0; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"></div>
+        <div id="print-qrcode" style="display: inline-block; padding: 20px; border: 2px solid #e2e8f0; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+            <img src="{{ $qrcodeBase64 }}" alt="QR Code" style="width: 320px; height: 320px;">
+        </div>
         <p style="font-size: 16px; font-weight: bold; margin-top: 40px; color: #1e3a8a;">Silakan Pindai di Sini</p>
         <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">{{ route('events.register', $event->code) }}</p>
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var registerUrl = "{{ route('events.register', $event->code) }}";
-        
-        // Generate QR code for display
-        new QRCode(document.getElementById("qrcode"), {
-            text: registerUrl,
-            width: 180,
-            height: 180,
-            colorDark : "#0f172a",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-
-        // Generate QR code for printing
-        new QRCode(document.getElementById("print-qrcode"), {
-            text: registerUrl,
-            width: 320,
-            height: 320,
-            colorDark : "#0f172a",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-    });
-
     function printQRCode() {
         var printContents = document.getElementById("print-area").innerHTML;
-        var originalContents = document.body.innerHTML;
         
-        // Open printable window or replace content
         var printWindow = window.open('', '_blank');
         printWindow.document.write('<html><head><title>Cetak QR Code Event</title>');
         printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">');
@@ -195,7 +170,6 @@
         printWindow.document.write('</body></html>');
         printWindow.document.close();
         
-        // Wait for loaded and print
         setTimeout(function() {
             printWindow.print();
             printWindow.close();

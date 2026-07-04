@@ -31,7 +31,7 @@
                 <div class="flex flex-col items-center justify-center space-y-4">
                     <!-- QR Code Container -->
                     <div id="ticket-qrcode-container" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center">
-                        <div id="ticket-qrcode"></div>
+                        <img src="{{ $qrcodeBase64 }}" alt="QR Code" class="h-32 w-32">
                     </div>
 
                     <!-- 1D Barcode Container -->
@@ -70,23 +70,12 @@
     </div>
 
     <!-- Scanner CDN Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var mrn = "{{ $patient->medical_record_number }}";
 
-            // 1. Generate 2D QR Code (contains RM number)
-            new QRCode(document.getElementById("ticket-qrcode"), {
-                text: mrn,
-                width: 120,
-                height: 120,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
-            });
-
-            // 2. Generate 1D Barcode (standard Code128 encoding)
+            // Generate 1D Barcode (standard Code128 encoding)
             JsBarcode("#ticket-barcode", mrn, {
                 format: "CODE128",
                 width: 1.5,

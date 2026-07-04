@@ -70,7 +70,11 @@ class EventController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(config('cfms.per_page', 10));
 
-        return view('follow-up.events.show', compact('event', 'patients'));
+        // Generate QR code base64 completely offline on the server
+        $registerUrl = route('events.register', $event->code);
+        $qrcodeBase64 = (new \chillerlan\QRCode\QRCode)->render($registerUrl);
+
+        return view('follow-up.events.show', compact('event', 'patients', 'qrcodeBase64'));
     }
 
     public function toggleActive(Event $event)
@@ -139,6 +143,10 @@ class EventController extends Controller
 
         $queueCode = 'EVT-' . str_pad($queueNum, 3, '0', STR_PAD_LEFT);
 
-        return view('follow-up.events.ticket', compact('event', 'patient', 'queueCode'));
+        // Generate QR code containing the MRN (medical record number)
+        $mrn = $patient->medical_record_number;
+        $qrcodeBase64 = (new \chillerlan\QRCode\QRCode)->render($mrn);
+
+        return view('follow-up.events.ticket', compact('event', 'patient', 'queueCode', 'qrcodeBase64'));
     }
 }
