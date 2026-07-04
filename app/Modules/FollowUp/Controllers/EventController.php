@@ -70,9 +70,9 @@ class EventController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(config('cfms.per_page', 10));
 
-        // Generate QR code base64 completely offline on the server
+        // Generate QR code base64 completely offline on the server with JEC Blue
         $registerUrl = route('events.register', $event->code);
-        $qrcodeBase64 = (new \chillerlan\QRCode\QRCode)->render($registerUrl);
+        $qrcodeBase64 = $this->generateQrCode($registerUrl);
 
         return view('follow-up.events.show', compact('event', 'patients', 'qrcodeBase64'));
     }
@@ -143,10 +143,39 @@ class EventController extends Controller
 
         $queueCode = 'EVT-' . str_pad($queueNum, 3, '0', STR_PAD_LEFT);
 
-        // Generate QR code containing the MRN (medical record number)
+        // Generate QR code containing the MRN (medical record number) with JEC Blue
         $mrn = $patient->medical_record_number;
-        $qrcodeBase64 = (new \chillerlan\QRCode\QRCode)->render($mrn);
+        $qrcodeBase64 = $this->generateQrCode($mrn);
 
         return view('follow-up.events.ticket', compact('event', 'patient', 'queueCode', 'qrcodeBase64'));
+    }
+
+    private function generateQrCode($data)
+    {
+        $options = new \chillerlan\QRCode\QROptions([
+            'eccLevel' => \chillerlan\QRCode\Common\EccLevel::H,
+            'outputInterface' => \chillerlan\QRCode\Output\QRMarkupSVG::class,
+            'outputBase64' => true,
+            'moduleValues' => [
+                \chillerlan\QRCode\Data\QRMatrix::M_DATA_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_FINDER_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_FINDER_DOT => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_ALIGNMENT_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_TIMING_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_FORMAT_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_VERSION_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_DARKMODULE => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_DATA => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_FINDER => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_ALIGNMENT => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_TIMING => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_FORMAT => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_VERSION => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_QUIETZONE => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_SEPARATOR => '#ffffff',
+            ],
+        ]);
+
+        return (new \chillerlan\QRCode\QRCode($options))->render($data);
     }
 }

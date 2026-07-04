@@ -30,8 +30,11 @@
                 <!-- Barcode & QR Code Section -->
                 <div class="flex flex-col items-center justify-center space-y-4">
                     <!-- QR Code Container -->
-                    <div id="ticket-qrcode-container" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center">
-                        <img src="{{ $qrcodeBase64 }}" alt="QR Code" class="h-32 w-32">
+                    <div id="ticket-qrcode-container" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center" style="position: relative; display: inline-block;">
+                        <img src="{{ $qrcodeBase64 }}" alt="QR Code" style="width: 128px; height: 128px; display: block;">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; background: white; display: flex; align-items: center; justify-content: center; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                            <img src="/jec-logo.png" style="width: 22px; height: auto;">
+                        </div>
                     </div>
 
                     <!-- 1D Barcode Container -->

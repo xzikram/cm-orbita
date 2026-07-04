@@ -64,8 +64,28 @@
                     <p class="text-xs text-slate-500 mt-1">Tempel QR code ini di meja pendaftaran atau banner lokasi acara agar pengunjung bisa mendaftar lewat HP.</p>
                 </div>
 
-                <div id="qrcode-container" class="bg-white p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center" style="width: 212px; height: 212px; min-width: 212px; min-height: 212px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                    <img src="{{ $qrcodeBase64 }}" alt="QR Code Pendaftaran Mandiri" style="width: 180px; height: 180px; min-width: 180px; min-height: 180px; display: block;">
+                <!-- Branded Card Preview -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-md flex flex-col items-center text-center w-full max-w-sm mx-auto" style="font-family: 'Inter', sans-serif;">
+                    <!-- Logo JEC-ORBITA -->
+                    <img src="/Logo RS JEC ORBITA.png" onerror="this.src='/logo.png'" style="height: 48px; object-fit: contain; margin-bottom: 16px; display: block;">
+                    
+                    <!-- Registrasi Capsule -->
+                    <div style="background-color: #1b4e80; color: white; border-radius: 9999px; padding: 8px 32px; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; margin-bottom: 8px; box-shadow: 0 4px 6px rgba(27,78,128,0.2);">
+                        REGISTRASI
+                    </div>
+                    
+                    <!-- Code & Location -->
+                    <div class="text-xs font-semibold text-slate-600 mb-6">
+                        {{ $event->code }} - {{ $event->location }}
+                    </div>
+
+                    <!-- QR Code with Center Logo -->
+                    <div style="position: relative; display: inline-block; background: white; padding: 12px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                        <img src="{{ $qrcodeBase64 }}" style="width: 200px; height: 200px; display: block;">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 38px; height: 38px; background: white; display: flex; align-items: center; justify-content: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+                            <img src="/jec-logo.png" style="width: 30px; height: auto;">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="w-full space-y-2">
@@ -144,17 +164,28 @@
 
 <!-- Print Only Area for QR Code -->
 <div id="print-area" class="hidden">
-    <div style="text-align: center; padding: 40px; font-family: 'Inter', sans-serif;">
-        <h1 style="font-size: 28px; margin-bottom: 5px; color: #1e3a8a;">{{ config('app.name') }}</h1>
-        <h2 style="font-size: 22px; margin-bottom: 20px; color: #334155;">{{ $event->name }}</h2>
-        <p style="font-size: 14px; margin-bottom: 40px; color: #64748b; max-width: 400px; margin-left: auto; margin-right: auto;">
-            Scan QR Code ini menggunakan HP Anda untuk melakukan pendaftaran pemeriksaan mata gratis secara mandiri di lokasi acara.
-        </p>
-        <div id="print-qrcode" style="display: inline-block; padding: 20px; border: 2px solid #e2e8f0; border-radius: 20px; background: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-            <img src="{{ $qrcodeBase64 }}" alt="QR Code" style="width: 320px; height: 320px;">
+    <div style="text-align: center; padding: 60px 40px; font-family: 'Inter', sans-serif; background: white;">
+        <!-- Logo JEC-ORBITA -->
+        <img src="/Logo RS JEC ORBITA.png" onerror="this.src='/logo.png'" style="height: 80px; object-fit: contain; margin-bottom: 24px; display: inline-block;">
+        
+        <br>
+        <!-- Registrasi Capsule -->
+        <div style="background-color: #1b4e80; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-radius: 9999px; padding: 14px 56px; font-size: 32px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(27,78,128,0.2);">
+            REGISTRASI
         </div>
-        <p style="font-size: 16px; font-weight: bold; margin-top: 40px; color: #1e3a8a;">Silakan Pindai di Sini</p>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">{{ route('events.register', $event->code) }}</p>
+        
+        <!-- Code & Location -->
+        <div style="font-size: 18px; font-weight: 700; color: #475569; margin-bottom: 36px; text-transform: uppercase; letter-spacing: 0.02em;">
+            {{ $event->code }} - {{ $event->location }}
+        </div>
+
+        <!-- QR Code with Center Logo -->
+        <div style="position: relative; display: inline-block; background: white; padding: 16px; border-radius: 24px; border: 2px solid #e2e8f0; box-shadow: 0 6px 12px rgba(0,0,0,0.05);">
+            <img src="{{ $qrcodeBase64 }}" style="width: 320px; height: 320px; display: block;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                <img src="/jec-logo.png" style="width: 48px; height: auto;">
+            </div>
+        </div>
     </div>
 </div>
 
