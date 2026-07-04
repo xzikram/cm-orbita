@@ -90,6 +90,52 @@ class CampaignController extends Controller
         return redirect()->back()->with('success', 'Status promo link berhasil diperbarui.');
     }
 
+    public function edit(MarketingCampaign $campaign)
+    {
+        abort_if($campaign->clinic_id !== Auth::user()->clinic_id, 403);
+        return view('follow-up.campaigns.edit', compact('campaign'));
+    }
+
+    public function update(Request $request, MarketingCampaign $campaign)
+    {
+        abort_if($campaign->clinic_id !== Auth::user()->clinic_id, 403);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:100|unique:marketing_campaigns,code,' . $campaign->id,
+            'source' => 'required|string|max:50',
+            'landing_page_type' => 'required|string|in:direct,landing',
+            'description' => 'nullable|string|max:2000',
+            'video_url' => 'nullable|string|max:255',
+            'brochure' => 'nullable|image|max:5120', // max 5MB
+            'benefits' => 'nullable|array',
+            'testimonials' => 'nullable|array',
+        ]);
+
+        if ($request->hasFile('brochure')) {
+            $path = $request->file('brochure')->store('campaigns/brochures', 'public');
+            $validated['brochure_image_path'] = $path;
+        }
+
+        // Clean up benefits & testimonials arrays to remove empty items
+        if (isset($validated['benefits'])) {
+            $validated['benefits'] = array_values(array_filter($validated['benefits']));
+        }
+        
+        if (isset($validated['testimonials'])) {
+            $validated['testimonials'] = array_values(array_filter($validated['testimonials'], function($t) {
+                return !empty($t['name']) && !empty($t['text']);
+            }));
+        }
+
+        $oldValues = $campaign->toArray();
+        $campaign->update($validated);
+        $this->auditLogService->logUpdated('MarketingCampaign', $campaign->id, $oldValues, $validated);
+
+        return redirect()->route('follow-up.campaigns.show', $campaign)
+            ->with('success', 'Link promosi marketing berhasil diperbarui.');
+    }
+
     // --- Public Promo Tracking & Registration Methods ---
 
     public function trackAndRedirect(Request $request, $code)

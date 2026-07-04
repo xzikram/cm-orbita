@@ -20,12 +20,20 @@ class MarketingCampaign extends Model
         'clicks_count',
         'conversions_count',
         'is_active',
+        'landing_page_type',
+        'description',
+        'video_url',
+        'brochure_image_path',
+        'testimonials',
+        'benefits',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'clicks_count' => 'integer',
         'conversions_count' => 'integer',
+        'testimonials' => 'array',
+        'benefits' => 'array',
     ];
 
     public function clinic(): BelongsTo

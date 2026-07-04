@@ -20,6 +20,10 @@
             </div>
             <div class="mt-4 sm:mt-0 sm:flex-none flex gap-3">
                 <a href="{{ route('follow-up.campaigns.index') }}" class="btn-secondary">Kembali</a>
+                <a href="{{ route('follow-up.campaigns.edit', $campaign) }}" class="btn-secondary flex items-center gap-1.5">
+                    <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                    Edit Landing Page
+                </a>
                 <a href="{{ route('campaign.track', $campaign->code) }}" target="_blank" class="btn-primary flex items-center gap-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
                     Uji Coba Link

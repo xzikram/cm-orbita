@@ -111,4 +111,45 @@ class CampaignTrackingTest extends TestCase
 
         $response->assertRedirect(route('campaign.success', ['code' => $campaign->code, 'patient' => $patient->id]));
     }
+
+    public function test_admin_can_update_campaign_landing_page_settings(): void
+    {
+        $campaign = MarketingCampaign::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Diskon Lensa 20% Juli (IG Feed)',
+            'code' => 'promo-lensa-juli-3',
+            'source' => 'instagram',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->put(route('follow-up.campaigns.update', $campaign), [
+            'name' => 'Diskon Lensa 20% Juli (IG Feed) Updated',
+            'code' => 'promo-lensa-juli-3',
+            'source' => 'instagram',
+            'landing_page_type' => 'landing',
+            'description' => 'Penawaran diskon kacamata 20 persen bagi semua pelanggan JEC.',
+            'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'benefits' => [
+                'Free periksa mata dasar',
+                'Free lap kacamata anti-fog',
+            ],
+            'testimonials' => [
+                [
+                    'name' => 'Budi',
+                    'stars' => 5,
+                    'text' => 'Pelayanannya mantap sekali!',
+                ]
+            ],
+        ]);
+
+        $campaign->refresh();
+        $this->assertEquals('Diskon Lensa 20% Juli (IG Feed) Updated', $campaign->name);
+        $this->assertEquals('landing', $campaign->landing_page_type);
+        $this->assertEquals('Penawaran diskon kacamata 20 persen bagi semua pelanggan JEC.', $campaign->description);
+        $this->assertEquals('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $campaign->video_url);
+        $this->assertEquals(['Free periksa mata dasar', 'Free lap kacamata anti-fog'], $campaign->benefits);
+        $this->assertEquals([['name' => 'Budi', 'stars' => 5, 'text' => 'Pelayanannya mantap sekali!']], $campaign->testimonials);
+
+        $response->assertRedirect(route('follow-up.campaigns.show', $campaign));
+    }
 }
