@@ -4,8 +4,10 @@
         @php
             $embedUrl = null;
             if (!empty($campaign->video_url)) {
-                if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/ ]{11})/', $campaign->video_url, $match)) {
-                    $embedUrl = "https://www.youtube.com/embed/" . $match[1];
+                if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^&?\/ ]{11})/', $campaign->video_url, $match)) {
+                    $embedUrl = "https://www.youtube-nocookie.com/embed/" . $match[1];
+                } elseif (preg_match('/^[a-zA-Z0-9_-]{11}$/', trim($campaign->video_url))) {
+                    $embedUrl = "https://www.youtube-nocookie.com/embed/" . trim($campaign->video_url);
                 }
             }
         @endphp
