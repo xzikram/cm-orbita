@@ -208,24 +208,24 @@
         printWindow.document.write('    body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: white; font-family: "Inter", sans-serif; box-sizing: border-box; }');
         
         if (size === 'A4') {
-            printWindow.document.write('    #print-layout-container { width: 210mm; height: 297mm; padding: 40mm 20mm; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }');
-            printWindow.document.write('    .logo-header { height: 110px; object-fit: contain; margin-bottom: 24px; display: inline-block; }');
-            printWindow.document.write('    .registrasi-badge { padding: 20px 80px; font-size: 48px; margin-bottom: 20px; }');
-            printWindow.document.write('    .event-subtitle { font-size: 24px; margin-bottom: 48px; }');
-            printWindow.document.write('    .qrcode-box { width: 500px; height: 500px; padding: 24px; border-radius: 36px; }');
-            printWindow.document.write('    .qrcode-img { width: 452px; height: 452px; }');
-            printWindow.document.write('    .center-logo-box { width: 90px; height: 90px; border-radius: 16px; }');
-            printWindow.document.write('    .center-logo-img { width: 70px; }');
+            printWindow.document.write('    #print-layout-container { width: 210mm; height: 297mm; padding: 25mm 20mm; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }');
+            printWindow.document.write('    .logo-header { height: 75px; object-fit: contain; margin-bottom: 20px; display: inline-block; }');
+            printWindow.document.write('    .registrasi-badge { padding: 14px 60px; font-size: 36px; margin-bottom: 16px; }');
+            printWindow.document.write('    .event-subtitle { font-size: 22px; margin-bottom: 36px; }');
+            printWindow.document.write('    .qrcode-box { width: 650px; height: 650px; padding: 24px; border-radius: 40px; }');
+            printWindow.document.write('    .qrcode-img { width: 602px; height: 602px; }');
+            printWindow.document.write('    .center-logo-box { width: 120px; height: 120px; border-radius: 20px; }');
+            printWindow.document.write('    .center-logo-img { width: 90px; }');
         } else {
             // A5 Size Configuration
-            printWindow.document.write('    #print-layout-container { width: 148mm; height: 210mm; padding: 20mm 15mm; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }');
-            printWindow.document.write('    .logo-header { height: 75px; object-fit: contain; margin-bottom: 16px; display: inline-block; }');
-            printWindow.document.write('    .registrasi-badge { padding: 12px 48px; font-size: 32px; margin-bottom: 12px; }');
-            printWindow.document.write('    .event-subtitle { font-size: 16px; margin-bottom: 24px; }');
-            printWindow.document.write('    .qrcode-box { width: 340px; height: 340px; padding: 16px; border-radius: 24px; }');
-            printWindow.document.write('    .qrcode-img { width: 308px; height: 308px; }');
-            printWindow.document.write('    .center-logo-box { width: 64px; height: 64px; border-radius: 12px; }');
-            printWindow.document.write('    .center-logo-img { width: 50px; }');
+            printWindow.document.write('    #print-layout-container { width: 148mm; height: 210mm; padding: 15mm 12mm; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }');
+            printWindow.document.write('    .logo-header { height: 50px; object-fit: contain; margin-bottom: 12px; display: inline-block; }');
+            printWindow.document.write('    .registrasi-badge { padding: 10px 40px; font-size: 26px; margin-bottom: 10px; }');
+            printWindow.document.write('    .event-subtitle { font-size: 15px; margin-bottom: 20px; }');
+            printWindow.document.write('    .qrcode-box { width: 480px; height: 480px; padding: 18px; border-radius: 28px; }');
+            printWindow.document.write('    .qrcode-img { width: 444px; height: 444px; }');
+            printWindow.document.write('    .center-logo-box { width: 90px; height: 90px; border-radius: 16px; }');
+            printWindow.document.write('    .center-logo-img { width: 70px; }');
         }
         
         printWindow.document.write('</style>');
