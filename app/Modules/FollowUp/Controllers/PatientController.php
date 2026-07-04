@@ -183,12 +183,28 @@ class PatientController extends Controller
             ->with('success', 'Data pasien berhasil diperbarui.');
     }
 
-    public function destroy(Patient $patient)
+    public function destroy(Request $request, Patient $patient)
     {
         abort_if($patient->clinic_id !== Auth::user()->clinic_id, 403);
+        abort_if(!Auth::user()->hasRole('super-admin'), 403, 'Hanya Super Admin yang dapat menghapus data.');
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
         $old = $patient->toArray();
         $patient->delete();
+
         $this->auditLogService->logDeleted('Patient', $patient->id, $old);
+
+        \App\Models\DeletionLog::create([
+            'user_id' => Auth::id(),
+            'model_type' => get_class($patient),
+            'model_id' => $patient->id,
+            'model_name' => $patient->name,
+            'model_identifier' => $patient->medical_record_number,
+            'reason' => $request->input('reason'),
+        ]);
 
         return redirect()->route('follow-up.patients.index')
             ->with('success', 'Pasien berhasil dihapus.');

@@ -46,6 +46,8 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Master Data ──
     Route::prefix('master-data')->name('master-data.')->middleware('permission:doctors.view')->group(function () {
+        Route::get('doctors/import', [DoctorController::class, 'showImportForm'])->name('doctors.import');
+        Route::post('doctors/import', [DoctorController::class, 'importMapping'])->name('doctors.store-import');
         Route::post('doctors/delete-all', [DoctorController::class, 'deleteAll'])->name('doctors.deleteAll');
         Route::resource('clinics', \App\Modules\MasterData\Controllers\ClinicController::class)->except('show');
         Route::resource('doctors', DoctorController::class)->except('show');
@@ -174,6 +176,9 @@ Route::middleware(['auth'])->group(function () {
     // ── Audit Logs ──
     Route::get('/audit-logs', [AuditLogController::class, 'index'])
         ->name('audit.index')
+        ->middleware('permission:audit.view');
+    Route::get('/deletion-logs', [AuditLogController::class, 'deletionLogs'])
+        ->name('audit.deletion-logs')
         ->middleware('permission:audit.view');
 
     // ── Administration (User & Access Management) ──

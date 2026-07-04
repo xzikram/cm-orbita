@@ -31,6 +31,21 @@ class AuditLogController extends Controller
 
         return view('audit.index', compact('logs'));
     }
+
+    public function deletionLogs(Request $request)
+    {
+        $query = \App\Models\DeletionLog::with('user')->latest();
+
+        if ($search = $request->get('search')) {
+            $query->where('model_name', 'LIKE', "%{$search}%")
+                ->orWhere('model_identifier', 'LIKE', "%{$search}%")
+                ->orWhere('reason', 'LIKE', "%{$search}%");
+        }
+
+        $logs = $query->paginate(config('cfms.per_page', 10));
+
+        return view('audit.deletion_logs', compact('logs'));
+    }
 }
 
 
