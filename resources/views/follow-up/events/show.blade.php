@@ -64,8 +64,8 @@
                     <p class="text-xs text-slate-500 mt-1">Tempel QR code ini di meja pendaftaran atau banner lokasi acara agar pengunjung bisa mendaftar lewat HP.</p>
                 </div>
 
-                <div id="qrcode-container" class="bg-white p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center">
-                    <img src="{{ $qrcodeBase64 }}" alt="QR Code Pendaftaran Mandiri" class="h-44 w-44">
+                <div id="qrcode-container" class="bg-white p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center" style="width: 212px; height: 212px; min-width: 212px; min-height: 212px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                    <img src="{{ $qrcodeBase64 }}" alt="QR Code Pendaftaran Mandiri" style="width: 180px; height: 180px; min-width: 180px; min-height: 180px; display: block;">
                 </div>
 
                 <div class="w-full space-y-2">
