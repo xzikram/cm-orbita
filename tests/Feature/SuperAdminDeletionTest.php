@@ -37,12 +37,13 @@ class SuperAdminDeletionTest extends TestCase
         $p1 = Permission::findOrCreate('patients.view', 'web');
         $p2 = Permission::findOrCreate('doctors.view', 'web');
         $p3 = Permission::findOrCreate('audit.view', 'web');
+        $p4 = Permission::findOrCreate('examinations.view', 'web');
 
         $superAdminRole = Role::findOrCreate('super-admin', 'web');
-        $superAdminRole->syncPermissions([$p1, $p2, $p3]);
+        $superAdminRole->syncPermissions([$p1, $p2, $p3, $p4]);
 
         $clinicAdminRole = Role::findOrCreate('admin-klinik', 'web');
-        $clinicAdminRole->syncPermissions([$p1, $p2]);
+        $clinicAdminRole->syncPermissions([$p1, $p2, $p4]);
 
         $this->superAdmin = User::create([
             'name' => 'Super Admin',
@@ -78,18 +79,33 @@ class SuperAdminDeletionTest extends TestCase
             'initials' => 'DH',
             'is_active' => true,
         ]);
+
+        $this->examination = \App\Models\Examination::create([
+            'clinic_id' => $this->clinic->id,
+            'patient_id' => $this->patient->id,
+            'doctor_id' => $this->doctor->id,
+            'created_by' => $this->superAdmin->id,
+            'examination_date' => '2026-07-01',
+            'lens_type' => 'RGP',
+            'lens_brand' => 'Bausch',
+            'registration_number' => 'REG-101',
+            'total_payment' => 50000,
+        ]);
     }
 
-    public function test_guests_cannot_delete_patient_or_doctor(): void
+    public function test_guests_cannot_delete_patient_or_doctor_or_examination(): void
     {
         $this->delete(route('follow-up.patients.destroy', $this->patient), ['reason' => 'Salah entri'])
             ->assertRedirect(route('login'));
 
         $this->delete(route('master-data.doctors.destroy', $this->doctor), ['reason' => 'Resign'])
             ->assertRedirect(route('login'));
+
+        $this->delete(route('follow-up.examinations.destroy', $this->examination), ['reason' => 'Cancel'])
+            ->assertRedirect(route('login'));
     }
 
-    public function test_clinic_admin_cannot_delete_patient_or_doctor(): void
+    public function test_clinic_admin_cannot_delete_patient_or_doctor_or_examination(): void
     {
         $this->actingAs($this->clinicAdmin)
             ->delete(route('follow-up.patients.destroy', $this->patient), ['reason' => 'Salah entri'])
@@ -98,9 +114,13 @@ class SuperAdminDeletionTest extends TestCase
         $this->actingAs($this->clinicAdmin)
             ->delete(route('master-data.doctors.destroy', $this->doctor), ['reason' => 'Resign'])
             ->assertStatus(403);
+
+        $this->actingAs($this->clinicAdmin)
+            ->delete(route('follow-up.examinations.destroy', $this->examination), ['reason' => 'Cancel'])
+            ->assertStatus(403);
     }
 
-    public function test_super_admin_can_delete_patient_and_doctor_with_reason(): void
+    public function test_super_admin_can_delete_patient_doctor_and_examination_with_reason(): void
     {
         // 1. Delete patient
         $responsePatient = $this->actingAs($this->superAdmin)
@@ -137,6 +157,24 @@ class SuperAdminDeletionTest extends TestCase
             'model_identifier' => 'DH',
             'reason' => 'Dokter sudah tidak bertugas kembali',
         ]);
+
+        // 3. Delete examination
+        $responseExam = $this->actingAs($this->superAdmin)
+            ->delete(route('follow-up.examinations.destroy', $this->examination), [
+                'reason' => 'Transaksi dibatalkan oleh pasien'
+            ]);
+
+        $responseExam->assertRedirect(route('follow-up.examinations.index'));
+        $this->assertSoftDeleted('examinations', ['id' => $this->examination->id]);
+
+        $this->assertDatabaseHas('deletion_logs', [
+            'user_id' => $this->superAdmin->id,
+            'model_type' => \App\Models\Examination::class,
+            'model_id' => $this->examination->id,
+            'model_name' => 'Pemeriksaan Pasien Hapus (2026-07-01)',
+            'model_identifier' => 'REG-101',
+            'reason' => 'Transaksi dibatalkan oleh pasien',
+        ]);
     }
 
     public function test_deletion_requires_reason(): void
@@ -147,6 +185,10 @@ class SuperAdminDeletionTest extends TestCase
 
         $this->actingAs($this->superAdmin)
             ->delete(route('master-data.doctors.destroy', $this->doctor), ['reason' => ''])
+            ->assertSessionHasErrors('reason');
+
+        $this->actingAs($this->superAdmin)
+            ->delete(route('follow-up.examinations.destroy', $this->examination), ['reason' => ''])
             ->assertSessionHasErrors('reason');
     }
 }

@@ -161,6 +161,42 @@ class ExaminationController extends Controller
         return view('follow-up.examinations.show', compact('examination'));
     }
 
+    public function destroy(Request $request, Examination $examination)
+    {
+        abort_if($examination->clinic_id !== Auth::user()->clinic_id, 403);
+        abort_if(!Auth::user()->hasRole('super-admin'), 403, 'Hanya Super Admin yang dapat menghapus data.');
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $old = $examination->toArray();
+
+        // 1. Soft delete related follow-up schedules & visits if any
+        $examination->followUpSchedules()->delete();
+        $examination->followUpVisits()->delete();
+
+        // 2. Soft delete the examination
+        $examination->delete();
+
+        // Log using AuditLogService
+        $auditLogService = resolve(\App\Core\Services\AuditLogService::class);
+        $auditLogService->logDeleted('Examination', $examination->id, $old);
+
+        $patient = $examination->patient()->withTrashed()->first();
+        \App\Models\DeletionLog::create([
+            'user_id' => Auth::id(),
+            'model_type' => get_class($examination),
+            'model_id' => $examination->id,
+            'model_name' => 'Pemeriksaan ' . ($patient->name ?? '-') . ' (' . ($examination->examination_date?->format('Y-m-d') ?? '-') . ')',
+            'model_identifier' => $examination->registration_number ?? '-',
+            'reason' => $request->input('reason'),
+        ]);
+
+        return redirect()->route('follow-up.examinations.index')
+            ->with('success', 'Data pemeriksaan berhasil dihapus.');
+    }
+
     public function exportCsv(Request $request)
     {
         $query = Examination::with(['patient', 'doctor', 'refractionOptician'])

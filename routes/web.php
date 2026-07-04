@@ -92,7 +92,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('examinations.store-downtime')
             ->middleware('permission:examinations.view');
         Route::resource('examinations', ExaminationController::class)
-            ->only(['index', 'create', 'store', 'show'])
+            ->only(['index', 'create', 'store', 'show', 'destroy'])
             ->middleware('permission:examinations.view');
 
         // Schedules

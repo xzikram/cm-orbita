@@ -116,7 +116,16 @@
                             Rp {{ number_format($exam->total_payment, 0, ',', '.') }}
                         </td>
                         <td class="text-right">
-                            <a href="{{ route('follow-up.examinations.show', $exam) }}" class="table-action-primary">Detail</a>
+                            <div class="flex items-center justify-end gap-x-2">
+                                <a href="{{ route('follow-up.examinations.show', $exam) }}" class="table-action-primary">Detail</a>
+                                @if(Auth::user()->hasRole('super-admin'))
+                                    <button type="button" 
+                                            @click="$dispatch('open-delete-modal', { url: '{{ route('follow-up.examinations.destroy', $exam) }}', name: 'Pemeriksaan {{ addslashes($exam->patient->name) }}' })" 
+                                            class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs font-semibold inline-flex items-center gap-1.5 ml-1">
+                                        Hapus
+                                    </button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -138,6 +147,32 @@
 
     <div class="mt-2">
         {{ $examinations->links() }}
+    </div>
+
+    <!-- Modal Konfirmasi Hapus Data dengan Alasan -->
+    <div x-data="{ open: false, url: '', name: '', reason: '' }"
+         @open-delete-modal.window="open = true; url = $event.detail.url; name = $event.detail.name; reason = ''"
+         x-show="open" 
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md" 
+         x-cloak>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-slate-200 dark:border-slate-800" @click.outside="open = false">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2 font-display">Konfirmasi Penghapusan</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Apakah Anda yakin ingin menghapus data <span class="font-semibold text-slate-800 dark:text-slate-200" x-text="name"></span>? Tindakan ini menggunakan Soft Delete.</p>
+            
+            <form :action="url" method="POST" class="space-y-4">
+                @csrf
+                @method('DELETE')
+                <div class="space-y-1">
+                    <label for="delete_reason" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Alasan Penghapusan</label>
+                    <input type="text" id="delete_reason" name="reason" x-model="reason" class="input-field" required placeholder="Masukkan alasan penghapusan data...">
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-2">
+                    <button @click="open = false" type="button" class="btn-secondary">Batal</button>
+                    <button type="submit" class="btn-danger" :disabled="reason.trim().length < 5">Hapus Data</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
