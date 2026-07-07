@@ -56,8 +56,8 @@
                             {{ $schedule->scheduled_date->format('d M Y') }}
                         </td>
                         <td>
-                            <div class="font-semibold text-slate-900 dark:text-white">{{ $schedule->patient->name }}</div>
-                            <div class="text-xs text-slate-400">RM: {{ $schedule->patient->medical_record_number }}</div>
+                            <div class="font-semibold text-slate-900 dark:text-white">{{ $schedule->patient?->name ?? '-' }}</div>
+                            <div class="text-xs text-slate-400">RM: {{ $schedule->patient?->medical_record_number ?? '-' }}</div>
                         </td>
                         <td class="text-slate-500 dark:text-slate-400">
                             {{ $schedule->examination->doctor->name ?? '-' }}

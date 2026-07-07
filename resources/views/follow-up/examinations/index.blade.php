@@ -84,14 +84,14 @@
                         </td>
                         <td>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <div class="font-semibold text-slate-900 dark:text-white">{{ $exam->patient->name }}</div>
+                                <div class="font-semibold text-slate-900 dark:text-white">{{ $exam->patient?->name ?? '-' }}</div>
                                 @if($exam->is_downtime_entry)
                                     <span class="badge-yellow text-[9px] py-0.5 px-1.5 font-bold uppercase tracking-wide">Downtime</span>
                                 @endif
                             </div>
                             <div class="text-xs text-slate-400">
-                                RM: {{ $exam->patient->medical_record_number }}
-                                @if($exam->patient->temporary_medical_record_number)
+                                RM: {{ $exam->patient?->medical_record_number ?? '-' }}
+                                @if($exam->patient?->temporary_medical_record_number)
                                     <span class="block text-[10px] text-amber-600 dark:text-amber-400 font-mono">Smt: {{ $exam->patient->temporary_medical_record_number }}</span>
                                 @endif
                             </div>
@@ -120,7 +120,7 @@
                                 <a href="{{ route('follow-up.examinations.show', $exam) }}" class="table-action-primary">Detail</a>
                                 @if(Auth::user()->hasRole('super-admin'))
                                     <button type="button" 
-                                            @click="$dispatch('open-delete-modal', { url: '{{ route('follow-up.examinations.destroy', $exam) }}', name: 'Pemeriksaan {{ addslashes($exam->patient->name) }}' })" 
+                                            @click="$dispatch('open-delete-modal', { url: '{{ route('follow-up.examinations.destroy', $exam) }}', name: 'Pemeriksaan {{ addslashes($exam->patient?->name ?? '-') }}' })" 
                                             class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs font-semibold inline-flex items-center gap-1.5 ml-1">
                                         Hapus
                                     </button>

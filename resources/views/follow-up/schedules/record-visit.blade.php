@@ -6,7 +6,7 @@
 <div class="max-w-4xl mx-auto">
     <div class="sm:flex sm:items-center sm:justify-between mb-6">
         <div class="sm:flex-auto">
-            <h1 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">Catat Hasil Kontrol: {{ $schedule->patient->name }}</h1>
+            <h1 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">Catat Hasil Kontrol: {{ $schedule->patient?->name ?? '-' }}</h1>
             <p class="mt-2 text-sm text-slate-700 dark:text-slate-400">Jadwal Kontrol: {{ $schedule->label }} - {{ $schedule->scheduled_date->format('d M Y') }}</p>
         </div>
         <div class="mt-4 sm:ml-16 sm:mt-0 flex gap-3">

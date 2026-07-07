@@ -37,7 +37,7 @@ class FollowUpVisit extends Model
 
     public function patient(): BelongsTo
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Patient::class)->withTrashed();
     }
 
     public function clinic(): BelongsTo
