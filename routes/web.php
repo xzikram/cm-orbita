@@ -35,6 +35,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+    // Admission Scanner (Mobile)
+    Route::get('/admission/scan', [\App\Modules\FollowUp\Controllers\AdmissionController::class, 'scanView'])->name('admission.scan');
+    Route::post('/admission/check-in', [\App\Modules\FollowUp\Controllers\AdmissionController::class, 'checkIn'])->name('admission.check-in');
+
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard')

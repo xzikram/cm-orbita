@@ -17,13 +17,14 @@ class Patient extends Model
         'clinic_id', 'medical_record_number', 'temporary_medical_record_number', 'name', 'nik', 'phone',
         'email', 'gender', 'date_of_birth', 'address', 'notes', 'is_active',
         'is_downtime_entry', 'parent_spouse_name', 'emergency_contact_name', 'emergency_contact_phone',
-        'registration_source', 'registration_source_id',
+        'registration_source', 'registration_source_id', 'hospital_arrival_at',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'is_active' => 'boolean',
         'is_downtime_entry' => 'boolean',
+        'hospital_arrival_at' => 'datetime',
     ];
 
     public function clinic(): BelongsTo

@@ -259,4 +259,81 @@ class EventRegistrationTest extends TestCase
         $this->assertStringContainsString('Pasien Barat', $content);
         $this->assertStringContainsString('Pasien Timur', $content);
     }
+
+    public function test_admin_can_access_scan_view(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('admission.scan'));
+        $response->assertStatus(200);
+        $response->assertSee('Scanner Admisi');
+    }
+
+    public function test_admin_can_check_in_valid_patient(): void
+    {
+        $event = Event::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Baksos Mata',
+            'code' => 'baksos-mata-test',
+            'event_date' => '2026-08-10',
+            'location' => 'Balai Kota',
+            'is_active' => true,
+        ]);
+
+        $patient = Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-999',
+            'name' => 'Pasien Teruji',
+            'phone' => '0899999',
+            'date_of_birth' => '1999-09-09',
+            'gender' => 'L',
+            'registration_source' => 'event',
+            'registration_source_id' => $event->id,
+            'is_active' => true,
+        ]);
+
+        $this->assertNull($patient->hospital_arrival_at);
+
+        $response = $this->actingAs($this->admin)->postJson(route('admission.check-in'), [
+            'barcode' => 'TEMP-999',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('patient.name', 'Pasien Teruji');
+
+        $patient->refresh();
+        $this->assertNotNull($patient->hospital_arrival_at);
+    }
+
+    public function test_admin_cannot_check_in_invalid_patient(): void
+    {
+        $response = $this->actingAs($this->admin)->postJson(route('admission.check-in'), [
+            'barcode' => 'TEMP-INVALID',
+        ]);
+
+        $response->assertStatus(404);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_admin_cannot_check_in_non_event_patient(): void
+    {
+        $patient = Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-888',
+            'name' => 'Pasien Non Event',
+            'phone' => '0888888',
+            'date_of_birth' => '1998-08-08',
+            'gender' => 'L',
+            'registration_source' => 'admin',
+            'registration_source_id' => null,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->postJson(route('admission.check-in'), [
+            'barcode' => 'TEMP-888',
+        ]);
+
+        $response->assertStatus(400);
+        $response->assertJsonPath('success', false);
+        $response->assertJsonPath('message', "Pasien 'Pasien Non Event' terdaftar bukan melalui Event.");
+    }
 }
