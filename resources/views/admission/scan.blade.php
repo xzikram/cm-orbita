@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-slate-900">
+<html lang="id" class="h-full dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -74,21 +74,21 @@
         }
     </style>
 </head>
-<body class="h-full font-sans antialiased text-slate-100 bg-slate-950 flex flex-col justify-between overflow-hidden">
+<body class="h-full font-sans antialiased text-slate-100 bg-slate-950 flex flex-col justify-between overflow-hidden" style="background: #090f1d !important; color: #f1f5f9 !important;">
     
     <!-- Top Header -->
-    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 safe-top flex items-center justify-between z-10">
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 safe-top flex items-center justify-between z-10" style="background-color: #0f172a !important; border-bottom: 1px solid #1e293b !important;">
         <div class="flex items-center gap-3">
             <div class="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white overflow-hidden p-1 shadow-sm" style="width: 40px; height: 40px; background-color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                 <img src="{{ asset('Logo RS JEC ORBITA.png') }}" class="max-h-full max-w-full object-contain" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="JEC ORBITA Logo">
             </div>
             <div>
-                <h1 class="text-sm font-extrabold tracking-tight text-white leading-none">Scanner Admisi</h1>
-                <span class="text-[10px] font-semibold text-slate-400">RS JEC ORBITA @ MAKASSAR</span>
+                <h1 class="text-sm font-extrabold tracking-tight text-white leading-none" style="color: white !important;">Scanner Admisi</h1>
+                <span class="text-[10px] font-semibold text-slate-400" style="color: #94a3b8 !important;">RS JEC ORBITA @ MAKASSAR</span>
             </div>
         </div>
         <div>
-            <a href="{{ route('dashboard') }}" class="text-xs bg-slate-850 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 font-semibold transition-colors" style="background-color: #1e293b; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; text-decoration: none; border: 1px solid #334155;">
+            <a href="{{ route('dashboard') }}" class="text-xs bg-slate-850 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 font-semibold transition-colors" style="background-color: #1e293b; color: white !important; padding: 6px 12px; border-radius: 8px; font-size: 12px; text-decoration: none; border: 1px solid #334155;">
                 Dashboard
             </a>
         </div>
