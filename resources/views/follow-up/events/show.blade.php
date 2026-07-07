@@ -112,7 +112,14 @@
         <div class="card p-6 lg:col-span-2 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Peserta Terdaftar</h3>
-                <span class="badge-blue text-xs font-bold">{{ $patients->total() }} Terdaftar</span>
+                <div class="flex items-center gap-2">
+                    <span class="badge-blue text-xs font-bold">{{ $patients->total() }} Terdaftar</span>
+                    @if($patients->total() > 0)
+                        <a href="{{ route('follow-up.events.export', $event) }}" class="text-xs font-semibold px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-colors" title="Ekspor Peserta ke Excel">
+                            Ekspor Excel
+                        </a>
+                    @endif
+                </div>
             </div>
 
             <div class="table-container">

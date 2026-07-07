@@ -150,6 +150,188 @@ class EventController extends Controller
         return view('follow-up.events.ticket', compact('event', 'patient', 'queueCode', 'qrcodeBase64'));
     }
 
+    public function exportExcel(Event $event)
+    {
+        abort_if($event->clinic_id !== Auth::user()->clinic_id, 403);
+
+        $patients = $event->patients()->orderBy('created_at', 'desc')->get();
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="ekspor_event_' . Str::slug($event->name) . '_' . date('Ymd_His') . '.xls"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $xmlEscape = function($val) {
+            return htmlspecialchars($val ?? '', ENT_XML1, 'UTF-8');
+        };
+
+        $callback = function() use ($event, $patients, $xmlEscape) {
+            $xml = '<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>CFMS</Author>
+  <LastAuthor>CFMS</LastAuthor>
+  <Created>' . date('Y-m-d\TH:i:s\Z') . '</Created>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#1B4E80" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>';
+
+            $xml .= ' <Worksheet ss:Name="' . substr($xmlEscape($event->name), 0, 30) . '">
+  <Table>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pasien</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. RM Sementara</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">NIK</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. WhatsApp</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Jenis Kelamin</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+   </Row>';
+
+            foreach ($patients as $p) {
+                $xml .= '   <Row>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->nik) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->gender == 'L' ? 'Laki-laki' : ($p->gender == 'P' ? 'Perempuan' : $p->gender)) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+   </Row>';
+            }
+
+            $xml .= '  </Table>
+ </Worksheet>';
+            $xml .= '</Workbook>';
+            echo $xml;
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportAllExcel()
+    {
+        $clinicId = Auth::user()->clinic_id;
+
+        $patients = Patient::where('clinic_id', $clinicId)
+            ->where('registration_source', 'event')
+            ->with('event')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="ekspor_seluruh_event_' . date('Ymd_His') . '.xls"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $xmlEscape = function($val) {
+            return htmlspecialchars($val ?? '', ENT_XML1, 'UTF-8');
+        };
+
+        $callback = function() use ($patients, $xmlEscape) {
+            $xml = '<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>CFMS</Author>
+  <LastAuthor>CFMS</LastAuthor>
+  <Created>' . date('Y-m-d\TH:i:s\Z') . '</Created>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#1B4E80" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>';
+
+            $xml .= ' <Worksheet ss:Name="Semua Event">
+  <Table>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Event</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Lokasi Event</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Event</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pasien</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. RM Sementara</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">NIK</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. WhatsApp</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Jenis Kelamin</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+   </Row>';
+
+            foreach ($patients as $p) {
+                $eventName = $p->event ? $p->event->name : '-';
+                $eventLocation = $p->event ? $p->event->location : '-';
+                $eventDate = $p->event && $p->event->event_date ? $p->event->event_date->format('d/m/Y') : '-';
+
+                $xml .= '   <Row>
+    <Cell><Data ss:Type="String">' . $xmlEscape($eventName) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($eventLocation) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($eventDate) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->nik) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->gender == 'L' ? 'Laki-laki' : ($p->gender == 'P' ? 'Perempuan' : $p->gender)) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+   </Row>';
+            }
+
+            $xml .= '  </Table>
+ </Worksheet>';
+            $xml .= '</Workbook>';
+            echo $xml;
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     private function generateQrCode($data)
     {
         $options = new \chillerlan\QRCode\QROptions([

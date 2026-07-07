@@ -113,6 +113,12 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('permission:follow-up.record-visit');
 
         // Events
+        Route::get('events/export/all', [\App\Modules\FollowUp\Controllers\EventController::class, 'exportAllExcel'])
+            ->name('events.export-all')
+            ->middleware('permission:patients.view');
+        Route::get('events/{event}/export', [\App\Modules\FollowUp\Controllers\EventController::class, 'exportExcel'])
+            ->name('events.export')
+            ->middleware('permission:patients.view');
         Route::resource('events', \App\Modules\FollowUp\Controllers\EventController::class)
             ->middleware('permission:patients.view');
         Route::patch('events/{event}/toggle-active', [\App\Modules\FollowUp\Controllers\EventController::class, 'toggleActive'])

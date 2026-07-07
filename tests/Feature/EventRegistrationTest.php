@@ -166,4 +166,97 @@ class EventRegistrationTest extends TestCase
         $response2->assertStatus(200);
         $response2->assertSee('EVT-002');
     }
+
+    public function test_admin_can_export_event_excel(): void
+    {
+        $event = Event::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Baksos Mata',
+            'code' => 'baksos-mata-5',
+            'event_date' => '2026-08-10',
+            'location' => 'Balai Kota',
+            'is_active' => true,
+        ]);
+
+        Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-103',
+            'name' => 'Pasien Tiga',
+            'phone' => '0833333',
+            'date_of_birth' => '1993-03-03',
+            'gender' => 'L',
+            'registration_source' => 'event',
+            'registration_source_id' => $event->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('follow-up.events.export', $event));
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.ms-excel');
+        $this->assertStringStartsWith('attachment; filename="ekspor_event_baksos-mata_', $response->headers->get('Content-Disposition'));
+
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        $this->assertStringContainsString('Pasien Tiga', $content);
+    }
+
+    public function test_admin_can_export_all_events_excel(): void
+    {
+        $event1 = Event::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Baksos Barat',
+            'code' => 'baksos-barat',
+            'event_date' => '2026-08-10',
+            'location' => 'Kantor Kecamatan',
+            'is_active' => true,
+        ]);
+
+        $event2 = Event::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Baksos Timur',
+            'code' => 'baksos-timur',
+            'event_date' => '2026-08-11',
+            'location' => 'Balai RW',
+            'is_active' => true,
+        ]);
+
+        Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-104',
+            'name' => 'Pasien Barat',
+            'phone' => '0844444',
+            'date_of_birth' => '1994-04-04',
+            'gender' => 'L',
+            'registration_source' => 'event',
+            'registration_source_id' => $event1->id,
+            'is_active' => true,
+        ]);
+
+        Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-105',
+            'name' => 'Pasien Timur',
+            'phone' => '0855555',
+            'date_of_birth' => '1995-05-05',
+            'gender' => 'P',
+            'registration_source' => 'event',
+            'registration_source_id' => $event2->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('follow-up.events.export-all'));
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.ms-excel');
+
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        $this->assertStringContainsString('Baksos Barat', $content);
+        $this->assertStringContainsString('Baksos Timur', $content);
+        $this->assertStringContainsString('Pasien Barat', $content);
+        $this->assertStringContainsString('Pasien Timur', $content);
+    }
 }
