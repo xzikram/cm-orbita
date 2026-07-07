@@ -340,4 +340,46 @@ class EventRegistrationTest extends TestCase
         $response->assertJsonPath('success', false);
         $response->assertJsonPath('message', "Pasien 'Pasien Non Event' terdaftar bukan melalui Event atau Promosi.");
     }
+
+    public function test_admin_can_mark_patient_for_follow_up(): void
+    {
+        $patient = Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-888',
+            'name' => 'Pasien Follow Up Test',
+            'phone' => '0888888',
+            'date_of_birth' => '1998-08-08',
+            'gender' => 'L',
+            'registration_source' => 'event',
+            'registration_source_id' => 1,
+            'is_active' => true,
+        ]);
+
+        $this->assertFalse($patient->needs_follow_up);
+        $this->assertNull($patient->follow_up_notes);
+
+        // Mark as needing follow-up
+        $response = $this->actingAs($this->admin)->post(route('follow-up.patients.mark-follow-up', $patient), [
+            'needs_follow_up' => 1,
+            'follow_up_notes' => 'Catatan follow-up penting.',
+        ]);
+
+        $response->assertRedirect();
+        
+        $patient->refresh();
+        $this->assertTrue($patient->needs_follow_up);
+        $this->assertEquals('Catatan follow-up penting.', $patient->follow_up_notes);
+
+        // Unmark follow-up
+        $responseUnmark = $this->actingAs($this->admin)->post(route('follow-up.patients.mark-follow-up', $patient), [
+            'needs_follow_up' => 0,
+            'follow_up_notes' => null,
+        ]);
+
+        $responseUnmark->assertRedirect();
+
+        $patient->refresh();
+        $this->assertFalse($patient->needs_follow_up);
+        $this->assertNull($patient->follow_up_notes);
+    }
 }

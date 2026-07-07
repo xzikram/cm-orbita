@@ -18,6 +18,7 @@ class Patient extends Model
         'email', 'gender', 'date_of_birth', 'address', 'notes', 'is_active',
         'is_downtime_entry', 'parent_spouse_name', 'emergency_contact_name', 'emergency_contact_phone',
         'registration_source', 'registration_source_id', 'hospital_arrival_at',
+        'needs_follow_up', 'follow_up_notes',
     ];
 
     protected $casts = [
@@ -25,6 +26,11 @@ class Patient extends Model
         'is_active' => 'boolean',
         'is_downtime_entry' => 'boolean',
         'hospital_arrival_at' => 'datetime',
+        'needs_follow_up' => 'boolean',
+    ];
+
+    protected $attributes = [
+        'needs_follow_up' => false,
     ];
 
     public function clinic(): BelongsTo

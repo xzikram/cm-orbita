@@ -610,4 +610,29 @@ class PatientController extends Controller
 
         return redirect()->back()->with('success', "Nomor RM pasien '{$patient->name}' berhasil diperbarui menjadi '{$newMr}'.");
     }
+
+    public function markFollowUp(Request $request, Patient $patient)
+    {
+        abort_if($patient->clinic_id !== Auth::user()->clinic_id, 403);
+
+        $validated = $request->validate([
+            'needs_follow_up' => 'required|boolean',
+            'follow_up_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $old = [
+            'needs_follow_up' => $patient->needs_follow_up,
+            'follow_up_notes' => $patient->follow_up_notes,
+        ];
+
+        $patient->update($validated);
+
+        $this->auditLogService->logUpdated('Patient', $patient->id, $old, $validated);
+
+        $statusMessage = $patient->needs_follow_up 
+            ? "Pasien '{$patient->name}' berhasil ditandai perlu follow-up." 
+            : "Tanda follow-up untuk pasien '{$patient->name}' berhasil dihapus.";
+
+        return redirect()->back()->with('success', $statusMessage);
+    }
 }

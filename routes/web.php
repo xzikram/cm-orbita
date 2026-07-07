@@ -72,6 +72,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('patients/{patient}/quick-update-rm', [PatientController::class, 'quickUpdateRm'])
             ->name('patients.quick-update-rm')
             ->middleware('permission:patients.view');
+        Route::post('patients/{patient}/mark-follow-up', [PatientController::class, 'markFollowUp'])
+            ->name('patients.mark-follow-up')
+            ->middleware('permission:patients.view');
 
         Route::post('patients/delete-all', [PatientController::class, 'deleteAll'])
             ->name('patients.deleteAll')

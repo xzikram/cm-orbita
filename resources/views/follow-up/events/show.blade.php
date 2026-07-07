@@ -128,7 +128,6 @@
                     <thead>
                         <tr>
                             <th>Nama Pasien</th>
-                            <th>No. RM Sementara</th>
                             <th>No. WhatsApp</th>
                             <th>Umur / JK</th>
                             <th>Status Kehadiran</th>
@@ -139,10 +138,17 @@
                         @forelse($patients as $patient)
                             <tr>
                                 <td class="font-semibold text-slate-900 dark:text-white">
-                                    {{ $patient->name }}
-                                </td>
-                                <td class="font-mono text-xs text-slate-500 dark:text-slate-400">
-                                    {{ $patient->medical_record_number }}
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ $patient->name }}</span>
+                                        @if($patient->needs_follow_up)
+                                            <span class="inline-flex items-center gap-x-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400" title="Catatan: {{ $patient->follow_up_notes ?? '-' }}">
+                                                <svg class="h-3 w-3 fill-amber-500 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.6 3.102-1.196 4.622c-.21.81.67 1.45 1.366.98L10 15.547l4.181 2.474c.696.47 1.576-.17 1.366-.98l-1.196-4.622 3.6-3.102c.635-.544.297-1.584-.536-1.651l-4.752-.382-1.831-4.401Z" />
+                                                </svg>
+                                                Perlu Follow Up
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="text-slate-600 dark:text-slate-300">
                                     {{ $patient->phone }}
@@ -165,9 +171,12 @@
                                 </td>
                                 <td class="text-right">
                                     <div class="flex items-center justify-end gap-x-2">
-                                        <a href="{{ route('follow-up.patients.show', $patient) }}" class="table-action-primary">Profil</a>
-                                        <!-- Periksa Event Link -->
-                                        <a href="{{ route('follow-up.examinations.create', ['patient_id' => $patient->id]) }}" class="text-xs font-semibold px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-colors">Periksa</a>
+                                        <a href="{{ route('follow-up.patients.show', $patient) }}" class="table-action-primary">Lihat Detail</a>
+                                        <button type="button" 
+                                                class="text-xs font-semibold px-2 py-1 rounded-lg transition-colors {{ $patient->needs_follow_up ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-950/40 dark:text-amber-400' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300' }}"
+                                                onclick="openFollowUpModal({{ $patient->id }}, '{{ addslashes($patient->name) }}', {{ $patient->needs_follow_up ? 'true' : 'false' }}, '{{ addslashes($patient->follow_up_notes ?? '') }}')">
+                                            {{ $patient->needs_follow_up ? 'Edit Tanda' : 'Tandai' }}
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -261,5 +270,70 @@
             printWindow.close();
         }, 500);
     }
+</script>
+
+<!-- Modal Follow-Up -->
+<div id="followup-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md hidden" x-cloak>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-slate-200 dark:border-slate-800">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1" id="modal-title">Tandai Pasien Perlu Follow-Up</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Atur status follow-up dan tambahkan catatan untuk pasien <strong id="modal-patient-name"></strong>.</p>
+        
+        <form id="followup-form" method="POST" class="space-y-4">
+            @csrf
+            
+            <input type="hidden" name="needs_follow_up" value="0">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="needs_follow_up" id="modal-needs-follow-up" value="1" class="rounded border-slate-300 dark:border-slate-700 text-primary-600 focus:ring-primary-500">
+                <label for="modal-needs-follow-up" class="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">Perlu Follow-Up</label>
+            </div>
+
+            <div class="space-y-1">
+                <label for="modal-follow-up-notes" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Catatan Follow-Up (Opsional)</label>
+                <textarea name="follow_up_notes" id="modal-follow-up-notes" rows="3" class="input-field" placeholder="Masukkan catatan di sini..."></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeFollowUpModal()" type="button" class="btn-secondary">Batal</button>
+                <button type="submit" class="btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openFollowUpModal(patientId, name, needsFollowUp, notes) {
+        const modal = document.getElementById('followup-modal');
+        const form = document.getElementById('followup-form');
+        const title = document.getElementById('modal-title');
+        const patientNameSpan = document.getElementById('modal-patient-name');
+        const checkbox = document.getElementById('modal-needs-follow-up');
+        const textarea = document.getElementById('modal-follow-up-notes');
+
+        // Set action URL
+        form.action = '/follow-up/patients/' + patientId + '/mark-follow-up';
+
+        // Set data
+        patientNameSpan.innerText = name;
+        checkbox.checked = needsFollowUp;
+        textarea.value = notes;
+        
+        title.innerText = needsFollowUp ? 'Edit Tanda Follow-Up' : 'Tandai Pasien Perlu Follow-Up';
+
+        // Show modal
+        modal.classList.remove('hidden');
+    }
+
+    function closeFollowUpModal() {
+        const modal = document.getElementById('followup-modal');
+        modal.classList.add('hidden');
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('followup-modal');
+        if (e.target === modal) {
+            closeFollowUpModal();
+        }
+    });
 </script>
 @endsection
