@@ -264,7 +264,7 @@ class EventRegistrationTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->get(route('admission.scan'));
         $response->assertStatus(200);
-        $response->assertSee('Scanner Admisi');
+        $response->assertSee('Logo RS JEC ORBITA.png');
     }
 
     public function test_admin_can_check_in_valid_patient(): void
