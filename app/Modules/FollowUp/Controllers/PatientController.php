@@ -293,12 +293,14 @@ class PatientController extends Controller
 
         if ($request->filled('downtime')) {
             $query->where('is_downtime_entry', $request->boolean('downtime'));
-        } else {
-            $query->where(function($q) {
-                $q->where('is_downtime_entry', true)
-                  ->orWhere('medical_record_number', 'like', 'TEMP-%')
-                  ->orWhereRaw("medical_record_number REGEXP '^[0-9]{8}-[0-9]{6}$'");
-            });
+        }
+
+        if ($request->filled('registration_source')) {
+            $query->where('registration_source', $request->get('registration_source'));
+        }
+
+        if ($request->filled('needs_follow_up')) {
+            $query->where('needs_follow_up', $request->boolean('needs_follow_up'));
         }
 
         $patients = $query->orderBy('name')->get();
@@ -317,7 +319,7 @@ class PatientController extends Controller
 
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel',
-            'Content-Disposition' => 'attachment; filename="laporan_pasien_downtime_' . date('Ymd_His') . '.xls"',
+            'Content-Disposition' => 'attachment; filename="laporan_pasien_' . date('Ymd_His') . '.xls"',
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0'
@@ -367,11 +369,24 @@ class PatientController extends Controller
     <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Sumber Registrasi</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Status Follow-Up</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Catatan Follow-Up</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Orangtua/Pasangan</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Emergency Contact</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon Emergency Contact</Data></Cell>
    </Row>';
             foreach ($belumUpdate as $p) {
+                $sourceLabel = match($p->registration_source) {
+                    'admin' => 'Admin (Langsung)',
+                    'downtime' => 'Downtime SIMRS',
+                    'document_delivery' => 'Kirim Berkas',
+                    'event' => 'Event Gratis (QR)',
+                    'marketing' => 'IG Promo Link',
+                    default => ucfirst($p->registration_source ?? '-'),
+                };
+                $followUpLabel = $p->needs_follow_up ? 'Perlu Follow-Up' : 'Normal';
+
                 $xml .= '   <Row>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->nik) . '</Data></Cell>
@@ -380,6 +395,9 @@ class PatientController extends Controller
     <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($sourceLabel) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($followUpLabel) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->follow_up_notes) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->parent_spouse_name) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_name) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_phone) . '</Data></Cell>
@@ -400,11 +418,24 @@ class PatientController extends Controller
     <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Sumber Registrasi</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Status Follow-Up</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Catatan Follow-Up</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Orangtua/Pasangan</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Emergency Contact</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">No. Telfon Emergency Contact</Data></Cell>
    </Row>';
             foreach ($sudahUpdate as $p) {
+                $sourceLabel = match($p->registration_source) {
+                    'admin' => 'Admin (Langsung)',
+                    'downtime' => 'Downtime SIMRS',
+                    'document_delivery' => 'Kirim Berkas',
+                    'event' => 'Event Gratis (QR)',
+                    'marketing' => 'IG Promo Link',
+                    default => ucfirst($p->registration_source ?? '-'),
+                };
+                $followUpLabel = $p->needs_follow_up ? 'Perlu Follow-Up' : 'Normal';
+
                 $xml .= '   <Row>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->temporary_medical_record_number ?? '-') . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
@@ -414,6 +445,9 @@ class PatientController extends Controller
     <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($sourceLabel) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($followUpLabel) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->follow_up_notes) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->parent_spouse_name) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_name) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->emergency_contact_phone) . '</Data></Cell>

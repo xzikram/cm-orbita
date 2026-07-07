@@ -408,4 +408,35 @@ class EventRegistrationTest extends TestCase
         $showResponse->assertSee('Ditandai Perlu Follow-Up');
         $showResponse->assertSee('Follow-Up Selesai');
     }
+
+    public function test_admin_can_export_patients_excel(): void
+    {
+        $patient = Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-777',
+            'name' => 'Pasien Export Test',
+            'phone' => '0877777',
+            'date_of_birth' => '1997-07-07',
+            'gender' => 'L',
+            'registration_source' => 'event',
+            'registration_source_id' => 1,
+            'is_active' => true,
+            'needs_follow_up' => true,
+            'follow_up_notes' => 'Catatan ekspor',
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('follow-up.patients.export-csv', [
+            'needs_follow_up' => 1,
+            'registration_source' => 'event',
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.ms-excel');
+        
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('Pasien Export Test', $content);
+        $this->assertStringContainsString('Event Gratis (QR)', $content);
+        $this->assertStringContainsString('Perlu Follow-Up', $content);
+        $this->assertStringContainsString('Catatan ekspor', $content);
+    }
 }
