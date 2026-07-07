@@ -78,15 +78,15 @@
     
     <!-- Top Header -->
     <header class="bg-white border-b border-slate-200 px-6 py-3 safe-top flex items-center justify-between z-10" style="background-color: #ffffff !important; border-bottom: 1px solid #e2e8f0 !important; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 10;">
-        <div class="flex items-center gap-3" style="display: flex; align-items: center; gap: 12px;">
+        <div class="flex items-center gap-3" style="display: flex; align-items: center; gap: 10px; min-width: 0;">
             <!-- Logo directly on the white background -->
-            <img src="{{ asset('Logo RS JEC ORBITA.png') }}" style="height: 28px; width: auto; object-fit: contain;" alt="JEC ORBITA Logo">
+            <img src="{{ asset('Logo RS JEC ORBITA.png') }}" style="height: 24px; width: auto; object-fit: contain; flex-shrink: 0;" alt="JEC ORBITA Logo">
             
             <!-- Vertical Divider -->
-            <div style="height: 20px; width: 1px; background-color: #cbd5e1;"></div>
+            <div style="height: 18px; width: 1px; background-color: #cbd5e1; flex-shrink: 0;"></div>
             
             <!-- Title -->
-            <h1 class="text-sm font-bold tracking-tight text-slate-800" style="color: #1e293b !important; font-size: 12px; font-weight: 700; margin: 0; line-height: 1; text-transform: uppercase; letter-spacing: 0.05em;">Scanner Admisi</h1>
+            <h1 class="text-xs font-extrabold tracking-wider leading-none" style="color: #1e293b !important; font-size: 10px; font-weight: 800; margin: 0; line-height: 1; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; flex-shrink: 0;">Scanner Admisi</h1>
         </div>
         <div>
             <a href="{{ route('dashboard') }}" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-semibold transition-all" style="background-color: #0f172a; color: white !important; padding: 6px 14px; border-radius: 8px; font-size: 11px; text-decoration: none; font-weight: 600; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); display: inline-block;">
