@@ -79,11 +79,8 @@
     <!-- Top Header -->
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 safe-top flex items-center justify-between z-10">
         <div class="flex items-center gap-3">
-            <div class="bg-primary-600/10 p-2 rounded-xl border border-primary-500/20" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 8px; border-radius: 12px;">
-                <!-- Explicit size added to prevent inflation if CSS load latency occurs -->
-                <svg class="h-5 w-5 text-primary-500" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#10b981">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16.01h.01" />
-                </svg>
+            <div class="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white overflow-hidden p-1 shadow-sm" style="width: 40px; height: 40px; background-color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                <img src="{{ asset('Logo RS JEC ORBITA.png') }}" class="max-h-full max-w-full object-contain" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="JEC ORBITA Logo">
             </div>
             <div>
                 <h1 class="text-sm font-extrabold tracking-tight text-white leading-none">Scanner Admisi</h1>
