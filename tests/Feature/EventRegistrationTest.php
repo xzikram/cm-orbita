@@ -200,6 +200,8 @@ class EventRegistrationTest extends TestCase
         $content = ob_get_clean();
 
         $this->assertStringContainsString('Pasien Tiga', $content);
+        $this->assertStringContainsString('Status Kehadiran', $content);
+        $this->assertStringContainsString('Waktu Check-in', $content);
     }
 
     public function test_admin_can_export_all_events_excel(): void
@@ -258,6 +260,8 @@ class EventRegistrationTest extends TestCase
         $this->assertStringContainsString('Baksos Timur', $content);
         $this->assertStringContainsString('Pasien Barat', $content);
         $this->assertStringContainsString('Pasien Timur', $content);
+        $this->assertStringContainsString('Status Kehadiran', $content);
+        $this->assertStringContainsString('Waktu Check-in', $content);
     }
 
     public function test_admin_can_access_scan_view(): void

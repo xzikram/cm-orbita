@@ -73,6 +73,8 @@ class CampaignController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(config('cfms.per_page', 10));
 
+        $arrivedCount = $campaign->patients()->whereNotNull('hospital_arrival_at')->count();
+
         // Get clicks over time for visual tracking (grouped by date)
         $clicksOverTime = CampaignClick::where('campaign_id', $campaign->id)
             ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
@@ -80,7 +82,7 @@ class CampaignController extends Controller
             ->orderBy('date', 'asc')
             ->get();
 
-        return view('follow-up.campaigns.show', compact('campaign', 'patients', 'clicksOverTime'));
+        return view('follow-up.campaigns.show', compact('campaign', 'patients', 'clicksOverTime', 'arrivedCount'));
     }
 
     public function toggleActive(MarketingCampaign $campaign)
@@ -267,6 +269,8 @@ class CampaignController extends Controller
     <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Status Kehadiran</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Waktu Check-in</Data></Cell>
    </Row>';
 
             foreach ($patients as $p) {
@@ -280,6 +284,8 @@ class CampaignController extends Controller
     <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? 'Hadir' : 'Belum Hadir') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? $p->hospital_arrival_at->timezone(config('app.timezone', 'Asia/Makassar'))->format('d/m/Y H:i') . ' WITA' : '-') . '</Data></Cell>
    </Row>';
             }
 
@@ -357,6 +363,8 @@ class CampaignController extends Controller
     <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Status Kehadiran</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Waktu Check-in</Data></Cell>
    </Row>';
 
             foreach ($patients as $p) {
@@ -375,6 +383,8 @@ class CampaignController extends Controller
     <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? 'Hadir' : 'Belum Hadir') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? $p->hospital_arrival_at->timezone(config('app.timezone', 'Asia/Makassar'))->format('d/m/Y H:i') . ' WITA' : '-') . '</Data></Cell>
    </Row>';
             }
 

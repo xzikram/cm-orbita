@@ -184,6 +184,8 @@ class CampaignTrackingTest extends TestCase
         $content = ob_get_clean();
 
         $this->assertStringContainsString('Pasien Empat', $content);
+        $this->assertStringContainsString('Status Kehadiran', $content);
+        $this->assertStringContainsString('Waktu Check-in', $content);
     }
 
     public function test_admin_can_export_all_campaigns_excel(): void
@@ -217,6 +219,8 @@ class CampaignTrackingTest extends TestCase
         $content = ob_get_clean();
 
         $this->assertStringContainsString('Pasien Lima', $content);
+        $this->assertStringContainsString('Status Kehadiran', $content);
+        $this->assertStringContainsString('Waktu Check-in', $content);
     }
 
     public function test_admin_can_check_in_marketing_patient(): void

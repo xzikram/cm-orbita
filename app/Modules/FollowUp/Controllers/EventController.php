@@ -70,11 +70,13 @@ class EventController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(config('cfms.per_page', 10));
 
+        $arrivedCount = $event->patients()->whereNotNull('hospital_arrival_at')->count();
+
         // Generate QR code base64 completely offline on the server with JEC Blue
         $registerUrl = route('events.register', $event->code);
         $qrcodeBase64 = $this->generateQrCode($registerUrl);
 
-        return view('follow-up.events.show', compact('event', 'patients', 'qrcodeBase64'));
+        return view('follow-up.events.show', compact('event', 'patients', 'qrcodeBase64', 'arrivedCount'));
     }
 
     public function toggleActive(Event $event)
@@ -209,6 +211,8 @@ class EventController extends Controller
     <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Status Kehadiran</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Waktu Check-in</Data></Cell>
    </Row>';
 
             foreach ($patients as $p) {
@@ -222,6 +226,8 @@ class EventController extends Controller
     <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? 'Hadir' : 'Belum Hadir') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? $p->hospital_arrival_at->timezone(config('app.timezone', 'Asia/Makassar'))->format('d/m/Y H:i') . ' WITA' : '-') . '</Data></Cell>
    </Row>';
             }
 
@@ -300,6 +306,8 @@ class EventController extends Controller
     <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
     <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Status Kehadiran</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Waktu Check-in</Data></Cell>
    </Row>';
 
             foreach ($patients as $p) {
@@ -320,6 +328,8 @@ class EventController extends Controller
     <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
     <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
     <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? 'Hadir' : 'Belum Hadir') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->hospital_arrival_at ? $p->hospital_arrival_at->timezone(config('app.timezone', 'Asia/Makassar'))->format('d/m/Y H:i') . ' WITA' : '-') . '</Data></Cell>
    </Row>';
             }
 

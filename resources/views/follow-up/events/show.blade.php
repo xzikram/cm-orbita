@@ -114,6 +114,7 @@
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Peserta Terdaftar</h3>
                 <div class="flex items-center gap-2">
                     <span class="badge-blue text-xs font-bold">{{ $patients->total() }} Terdaftar</span>
+                    <span class="badge-green text-xs font-bold">{{ $arrivedCount }} Hadir ({{ $patients->total() > 0 ? round(($arrivedCount / $patients->total()) * 100, 1) : 0 }}%)</span>
                     @if($patients->total() > 0)
                         <a href="{{ route('follow-up.events.export', $event) }}" class="text-xs font-semibold px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-colors" title="Ekspor Peserta ke Excel">
                             Ekspor Excel
@@ -130,6 +131,7 @@
                             <th>No. RM Sementara</th>
                             <th>No. WhatsApp</th>
                             <th>Umur / JK</th>
+                            <th>Status Kehadiran</th>
                             <th class="text-right">Aksi</th>
                         </tr>
                     </thead>
@@ -147,6 +149,19 @@
                                 </td>
                                 <td class="text-slate-600 dark:text-slate-300">
                                     {{ $patient->age ? $patient->age . ' Thn' : '-' }} ({{ $patient->gender }})
+                                </td>
+                                <td>
+                                    @if($patient->hospital_arrival_at)
+                                        <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
+                                            <svg class="h-1.5 w-1.5 fill-emerald-500" viewBox="0 0 6 6"><circle cx="3" cy="3" r="3"/></svg>
+                                            Hadir ({{ $patient->hospital_arrival_at->timezone(config('app.timezone', 'Asia/Makassar'))->format('H:i') }})
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-x-1.5 rounded-full bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/10 dark:bg-slate-500/10 dark:text-slate-400 dark:ring-slate-500/20">
+                                            <svg class="h-1.5 w-1.5 fill-slate-400" viewBox="0 0 6 6"><circle cx="3" cy="3" r="3"/></svg>
+                                            Belum Hadir
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="text-right">
                                     <div class="flex items-center justify-end gap-x-2">

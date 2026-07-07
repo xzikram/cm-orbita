@@ -39,7 +39,7 @@
     </div>
 
     <!-- Analytics Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
         <!-- Clicks Card -->
         <div class="card p-6 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800/40 relative overflow-hidden">
             <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Kunjungan Link (Klik)</span>
@@ -80,6 +80,24 @@
                 <svg class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" /></svg>
             </div>
         </div>
+
+        <!-- Arrivals Card -->
+        <div class="card p-6 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800/40 relative overflow-hidden">
+            <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Kehadiran di RS (Check-in)</span>
+            <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ number_format($arrivedCount) }}</span>
+                <span class="text-sm font-semibold text-slate-400">pasien</span>
+            </div>
+            <div class="mt-1 text-xs text-slate-400">
+                Tingkat Kedatangan: 
+                <span class="font-bold text-slate-700 dark:text-slate-200">
+                    {{ $campaign->conversions_count > 0 ? round(($arrivedCount / $campaign->conversions_count) * 100, 1) : 0 }}%
+                </span>
+            </div>
+            <div class="absolute right-4 bottom-2 text-emerald-50 dark:text-emerald-950/20 -z-10">
+                <svg class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+            </div>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -102,7 +120,18 @@
                         <div class="flex items-center justify-between text-xs">
                             <div>
                                 <span class="block font-bold text-slate-800 dark:text-slate-200">{{ $patient->name }}</span>
-                                <span class="text-slate-400 font-mono">{{ $patient->medical_record_number }}</span>
+                                <span class="text-slate-400 font-mono block">{{ $patient->medical_record_number }}</span>
+                                @if($patient->hospital_arrival_at)
+                                    <span class="inline-flex items-center gap-x-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20 mt-1">
+                                        <svg class="h-1 w-1 fill-emerald-500" viewBox="0 0 6 6"><circle cx="3" cy="3" r="3"/></svg>
+                                        Hadir ({{ $patient->hospital_arrival_at->timezone(config('app.timezone', 'Asia/Makassar'))->format('H:i') }} WITA)
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-x-1 rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 ring-1 ring-inset ring-slate-500/10 dark:bg-slate-500/10 dark:text-slate-400 dark:ring-slate-500/20 mt-1">
+                                        <svg class="h-1 w-1 fill-slate-400" viewBox="0 0 6 6"><circle cx="3" cy="3" r="3"/></svg>
+                                        Belum Hadir
+                                    </span>
+                                @endif
                             </div>
                             <div class="text-right">
                                 <span class="block text-slate-400">{{ $patient->created_at->format('d M Y') }}</span>
