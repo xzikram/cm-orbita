@@ -16,10 +16,10 @@ class AdmissionController extends Controller
     {
         // Get patients who arrived today at the hospital for current clinic
         $arrivedToday = Patient::where('clinic_id', Auth::user()->clinic_id)
-            ->where('registration_source', 'event')
+            ->whereIn('registration_source', ['event', 'marketing'])
             ->whereNotNull('hospital_arrival_at')
             ->whereDate('hospital_arrival_at', today())
-            ->with('event')
+            ->with(['event', 'campaign'])
             ->orderBy('hospital_arrival_at', 'desc')
             ->get();
 
@@ -41,7 +41,7 @@ class AdmissionController extends Controller
                 $q->where('medical_record_number', $barcode)
                   ->orWhere('temporary_medical_record_number', $barcode);
             })
-            ->with('event')
+            ->with(['event', 'campaign'])
             ->first();
 
         if (!$patient) {
@@ -51,11 +51,11 @@ class AdmissionController extends Controller
             ], 404);
         }
 
-        // Check if the patient registration source is 'event'
-        if ($patient->registration_source !== 'event') {
+        // Check if the patient registration source is 'event' or 'marketing'
+        if (!in_array($patient->registration_source, ['event', 'marketing'])) {
             return response()->json([
                 'success' => false,
-                'message' => "Pasien '{$patient->name}' terdaftar bukan melalui Event.",
+                'message' => "Pasien '{$patient->name}' terdaftar bukan melalui Event atau Promosi.",
             ], 400);
         }
 
@@ -84,7 +84,9 @@ class AdmissionController extends Controller
                 'medical_record_number' => $patient->medical_record_number,
                 'phone' => $patient->phone,
                 'gender' => $patient->gender == 'L' ? 'Laki-laki' : 'Perempuan',
-                'event_name' => $patient->event ? $patient->event->name : '-',
+                'event_name' => $patient->registration_source === 'event' 
+                    ? ($patient->event ? $patient->event->name : '-') 
+                    : ($patient->campaign ? $patient->campaign->name . ' (Promo)' : '-'),
                 'hospital_arrival_at' => $patient->hospital_arrival_at->timezone(config('app.timezone', 'Asia/Makassar'))->format('d M Y H:i') . " WITA",
                 'already_checked_in' => $alreadyCheckedIn,
             ]

@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 
 class CampaignController extends Controller
 {
@@ -199,6 +201,218 @@ class CampaignController extends Controller
             abort(404, 'Data pendaftaran tidak ditemukan.');
         }
 
-        return view('follow-up.campaigns.success', compact('campaign', 'patient'));
+        // Generate QR code containing the MRN (medical record number)
+        $mrn = $patient->medical_record_number;
+        $qrcodeBase64 = $this->generateQrCode($mrn);
+
+        return view('follow-up.campaigns.success', compact('campaign', 'patient', 'qrcodeBase64'));
+    }
+
+    public function exportExcel(MarketingCampaign $campaign)
+    {
+        abort_if($campaign->clinic_id !== Auth::user()->clinic_id, 403);
+
+        $patients = $campaign->patients()->orderBy('created_at', 'desc')->get();
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="ekspor_promo_' . Str::slug($campaign->name) . '_' . date('Ymd_His') . '.xls"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $xmlEscape = function($val) {
+            return htmlspecialchars($val ?? '', ENT_XML1, 'UTF-8');
+        };
+
+        $callback = function() use ($campaign, $patients, $xmlEscape) {
+            $xml = '<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>CFMS</Author>
+  <LastAuthor>CFMS</LastAuthor>
+  <Created>' . date('Y-m-d\TH:i:s\Z') . '</Created>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#1B4E80" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>';
+
+            $xml .= ' <Worksheet ss:Name="' . substr($xmlEscape($campaign->name), 0, 30) . '">
+  <Table>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pasien</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. RM Sementara</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">NIK</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. WhatsApp</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Jenis Kelamin</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+   </Row>';
+
+            foreach ($patients as $p) {
+                $xml .= '   <Row>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->nik) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->gender == 'L' ? 'Laki-laki' : ($p->gender == 'P' ? 'Perempuan' : $p->gender)) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+   </Row>';
+            }
+
+            $xml .= '  </Table>
+ </Worksheet>';
+            $xml .= '</Workbook>';
+            echo $xml;
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportAllExcel()
+    {
+        $clinicId = Auth::user()->clinic_id;
+
+        $patients = Patient::where('clinic_id', $clinicId)
+            ->where('registration_source', 'marketing')
+            ->with('campaign')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="ekspor_seluruh_promo_' . date('Ymd_His') . '.xls"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $xmlEscape = function($val) {
+            return htmlspecialchars($val ?? '', ENT_XML1, 'UTF-8');
+        };
+
+        $callback = function() use ($patients, $xmlEscape) {
+            $xml = '<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>CFMS</Author>
+  <LastAuthor>CFMS</LastAuthor>
+  <Created>' . date('Y-m-d\TH:i:s\Z') . '</Created>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" x:CharSet="1" x:Family="Swiss" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#1B4E80" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>';
+
+            $xml .= ' <Worksheet ss:Name="Semua Promo">
+  <Table>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Promo</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Sumber Media</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pasien</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. RM Sementara</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">NIK</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No. WhatsApp</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Jenis Kelamin</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Lahir</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Umur</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Alamat</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal Daftar</Data></Cell>
+   </Row>';
+
+            foreach ($patients as $p) {
+                $campaignName = $p->campaign ? $p->campaign->name : '-';
+                $campaignSource = $p->campaign ? $p->campaign->source : '-';
+
+                $xml .= '   <Row>
+    <Cell><Data ss:Type="String">' . $xmlEscape($campaignName) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($campaignSource) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->name) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->medical_record_number) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->nik) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->phone) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->gender == 'L' ? 'Laki-laki' : ($p->gender == 'P' ? 'Perempuan' : $p->gender)) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->date_of_birth ? $p->date_of_birth->format('d/m/Y') : '') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->age ? $p->age . ' Tahun' : '-') . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . $xmlEscape($p->address) . '</Data></Cell>
+    <Cell><Data ss:Type="String">' . ($p->created_at ? $p->created_at->format('d/m/Y H:i') : '') . '</Data></Cell>
+   </Row>';
+            }
+
+            $xml .= '  </Table>
+ </Worksheet>';
+            $xml .= '</Workbook>';
+            echo $xml;
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function generateQrCode($data)
+    {
+        $options = new QROptions([
+            'eccLevel' => \chillerlan\QRCode\Common\EccLevel::H,
+            'outputInterface' => \chillerlan\QRCode\Output\QRMarkupSVG::class,
+            'outputBase64' => true,
+            'moduleValues' => [
+                \chillerlan\QRCode\Data\QRMatrix::M_DATA_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_FINDER_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_FINDER_DOT => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_ALIGNMENT_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_TIMING_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_FORMAT_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_VERSION_DARK => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_DARKMODULE => '#1b4e80',
+                \chillerlan\QRCode\Data\QRMatrix::M_DATA => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_FINDER => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_ALIGNMENT => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_TIMING => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_FORMAT => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_VERSION => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_QUIETZONE => '#ffffff',
+                \chillerlan\QRCode\Data\QRMatrix::M_SEPARATOR => '#ffffff',
+            ],
+        ]);
+
+        return (new QRCode($options))->render($data);
     }
 }

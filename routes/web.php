@@ -130,6 +130,12 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('permission:patients.view');
 
         // Campaigns
+        Route::get('campaigns/export/all', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'exportAllExcel'])
+            ->name('campaigns.export-all')
+            ->middleware('permission:patients.view');
+        Route::get('campaigns/{campaign}/export', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'exportExcel'])
+            ->name('campaigns.export')
+            ->middleware('permission:patients.view');
         Route::resource('campaigns', \App\Modules\FollowUp\Controllers\CampaignController::class)
             ->middleware('permission:patients.view');
         Route::patch('campaigns/{campaign}/toggle-active', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'toggleActive'])

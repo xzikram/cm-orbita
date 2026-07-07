@@ -149,7 +149,13 @@
                             <h4 class="text-sm font-bold text-white leading-tight" style="font-size: 14px; font-weight: 700; color: white; margin: 0;">{{ $p->name }}</h4>
                             <p class="text-xs text-slate-400 font-semibold font-mono" style="font-size: 12px; color: #9ca3af; font-family: monospace; margin: 0;">{{ $p->medical_record_number }}</p>
                             <span class="inline-block text-[9px] bg-slate-800 text-primary-400 border border-slate-700/50 px-2 py-0.5 rounded-md font-semibold" style="display: inline-block; font-size: 9px; background-color: #1f2937; color: #10b981; border: 1px solid rgba(31, 41, 55, 0.5); padding: 2px 8px; border-radius: 6px; font-weight: 600;">
-                                {{ $p->event ? $p->event->name : '-' }}
+                                @if($p->registration_source === 'event')
+                                    {{ $p->event ? $p->event->name : '-' }}
+                                @elseif($p->registration_source === 'marketing')
+                                    {{ $p->campaign ? $p->campaign->name : '-' }} (Promo)
+                                @else
+                                    {{ $p->event ? $p->event->name : '-' }}
+                                @endif
                             </span>
                         </div>
                         <div class="text-right" style="text-align: right;">

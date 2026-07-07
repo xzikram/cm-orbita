@@ -334,6 +334,6 @@ class EventRegistrationTest extends TestCase
 
         $response->assertStatus(400);
         $response->assertJsonPath('success', false);
-        $response->assertJsonPath('message', "Pasien 'Pasien Non Event' terdaftar bukan melalui Event.");
+        $response->assertJsonPath('message', "Pasien 'Pasien Non Event' terdaftar bukan melalui Event atau Promosi.");
     }
 }

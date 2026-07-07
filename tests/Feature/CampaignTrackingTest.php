@@ -152,4 +152,107 @@ class CampaignTrackingTest extends TestCase
 
         $response->assertRedirect(route('follow-up.campaigns.show', $campaign));
     }
+
+    public function test_admin_can_export_campaign_excel(): void
+    {
+        $campaign = MarketingCampaign::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Diskon Lensa 20% Juli (IG Feed)',
+            'code' => 'promo-lensa-juli-4',
+            'source' => 'instagram',
+            'is_active' => true,
+        ]);
+
+        Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-106',
+            'name' => 'Pasien Empat',
+            'phone' => '0866666',
+            'date_of_birth' => '1996-06-06',
+            'gender' => 'L',
+            'registration_source' => 'marketing',
+            'registration_source_id' => $campaign->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('follow-up.campaigns.export', $campaign));
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.ms-excel');
+        
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        $this->assertStringContainsString('Pasien Empat', $content);
+    }
+
+    public function test_admin_can_export_all_campaigns_excel(): void
+    {
+        $campaign = MarketingCampaign::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Diskon Lensa 20% Juli (IG Feed)',
+            'code' => 'promo-lensa-juli-5',
+            'source' => 'instagram',
+            'is_active' => true,
+        ]);
+
+        Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-107',
+            'name' => 'Pasien Lima',
+            'phone' => '0877777',
+            'date_of_birth' => '1997-07-07',
+            'gender' => 'P',
+            'registration_source' => 'marketing',
+            'registration_source_id' => $campaign->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('follow-up.campaigns.export-all'));
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/vnd.ms-excel');
+        
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        $this->assertStringContainsString('Pasien Lima', $content);
+    }
+
+    public function test_admin_can_check_in_marketing_patient(): void
+    {
+        $campaign = MarketingCampaign::create([
+            'clinic_id' => $this->clinic->id,
+            'name' => 'Diskon Lensa 20% Juli (IG Feed)',
+            'code' => 'promo-lensa-juli-6',
+            'source' => 'instagram',
+            'is_active' => true,
+        ]);
+
+        $patient = Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'TEMP-777',
+            'name' => 'Pasien Promo Teruji',
+            'phone' => '08777999',
+            'date_of_birth' => '1997-07-27',
+            'gender' => 'L',
+            'registration_source' => 'marketing',
+            'registration_source_id' => $campaign->id,
+            'is_active' => true,
+        ]);
+
+        $this->assertNull($patient->hospital_arrival_at);
+
+        $response = $this->actingAs($this->admin)->postJson(route('admission.check-in'), [
+            'barcode' => 'TEMP-777',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('patient.name', 'Pasien Promo Teruji');
+        $response->assertJsonPath('patient.event_name', 'Diskon Lensa 20% Juli (IG Feed) (Promo)');
+
+        $patient->refresh();
+        $this->assertNotNull($patient->hospital_arrival_at);
+    }
 }
