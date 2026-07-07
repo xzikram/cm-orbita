@@ -103,8 +103,13 @@
                     <option value="1" {{ request('downtime') === '1' ? 'selected' : '' }}>Downtime SIMRS</option>
                     <option value="0" {{ request('downtime') === '0' ? 'selected' : '' }}>Normal</option>
                 </select>
+                <select name="needs_follow_up" onchange="this.form.submit()" class="input-field py-2.5">
+                    <option value="">-- Semua Status Follow-Up --</option>
+                    <option value="1" {{ request('needs_follow_up') === '1' ? 'selected' : '' }}>Perlu Follow-Up</option>
+                    <option value="0" {{ request('needs_follow_up') === '0' ? 'selected' : '' }}>Normal</option>
+                </select>
                 <button type="submit" class="btn-primary">Filter</button>
-                @if(request()->anyFilled(['search', 'downtime', 'registration_source']))
+                @if(request()->anyFilled(['search', 'downtime', 'registration_source', 'needs_follow_up']))
                     <a href="{{ route('follow-up.patients.index') }}" class="btn-secondary">Reset</a>
                 @endif
             </div>
@@ -143,6 +148,9 @@
                                             <span class="badge-blue text-[9px] py-0.5 px-1.5 font-bold uppercase tracking-wide">IG Promo</span>
                                         @elseif($patient->registration_source === 'document_delivery')
                                             <span class="inline-flex items-center gap-x-1 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 ring-1 ring-inset ring-indigo-600/10 dark:bg-indigo-500/10 dark:text-indigo-400 dark:ring-indigo-500/20 uppercase tracking-wide">Kirim Berkas</span>
+                                        @endif
+                                        @if($patient->needs_follow_up)
+                                            <span class="inline-flex items-center gap-x-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/10 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20 uppercase tracking-wide" title="Catatan: {{ $patient->follow_up_notes ?? '-' }}">Perlu Follow Up</span>
                                         @endif
                                     </div>
                                     <div class="text-xs text-slate-500 dark:text-slate-400">{{ $patient->gender == 'L' ? 'Laki-laki' : ($patient->gender == 'P' ? 'Perempuan' : '-') }}</div>

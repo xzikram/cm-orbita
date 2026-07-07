@@ -29,6 +29,10 @@ class PatientController extends Controller
             $query->where('registration_source', $request->get('registration_source'));
         }
 
+        if ($request->filled('needs_follow_up')) {
+            $query->where('needs_follow_up', $request->boolean('needs_follow_up'));
+        }
+
         $patients = $query->withCount('examinations')
             ->orderBy('name')
             ->paginate(config('cfms.per_page'));
@@ -83,6 +87,7 @@ class PatientController extends Controller
             'followUpSchedules' => fn($q) => $q->with('latestVisit')->orderBy('scheduled_date'),
             'documentDeliveries' => fn($q) => $q->with(['documentType', 'sender'])->latest('created_at'),
             'reminders' => fn($q) => $q->with('template')->latest('created_at'),
+            'followUpLogs' => fn($q) => $q->with('user')->latest(),
         ]);
 
         // Build a unified timeline collection
@@ -133,6 +138,18 @@ class PatientController extends Controller
                 'icon' => 'chat-bubble',
                 'color' => 'teal',
                 'status' => $reminder->status,
+            ]);
+        }
+
+        foreach ($patient->followUpLogs as $log) {
+            $timeline->push([
+                'type' => 'follow_up_log',
+                'date' => $log->created_at,
+                'title' => $log->action === 'marked' ? 'Ditandai Perlu Follow-Up' : 'Follow-Up Selesai',
+                'description' => ($log->action === 'marked' ? 'Ditandai' : 'Diselesaikan') . ' oleh ' . ($log->user->name ?? '-') . ($log->notes ? '. Catatan: ' . $log->notes : ''),
+                'icon' => $log->action === 'marked' ? 'flag' : 'check-circle',
+                'color' => 'amber',
+                'action' => $log->action,
             ]);
         }
 
@@ -627,11 +644,20 @@ class PatientController extends Controller
 
         $patient->update($validated);
 
+        // Record a log entry
+        $action = $validated['needs_follow_up'] ? 'marked' : 'resolved';
+        \App\Models\PatientFollowUpLog::create([
+            'patient_id' => $patient->id,
+            'user_id' => Auth::id(),
+            'action' => $action,
+            'notes' => $validated['follow_up_notes'],
+        ]);
+
         $this->auditLogService->logUpdated('Patient', $patient->id, $old, $validated);
 
         $statusMessage = $patient->needs_follow_up 
             ? "Pasien '{$patient->name}' berhasil ditandai perlu follow-up." 
-            : "Tanda follow-up untuk pasien '{$patient->name}' berhasil dihapus.";
+            : "Tanda follow-up untuk pasien '{$patient->name}' berhasil diselesaikan.";
 
         return redirect()->back()->with('success', $statusMessage);
     }

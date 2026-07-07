@@ -4,6 +4,29 @@
 
 @section('content')
 <div class="space-y-6">
+    @if($patient->needs_follow_up)
+        <div class="card p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-4 dark:bg-amber-950/20 dark:border-amber-800">
+            <div class="flex items-start gap-3">
+                <div class="mt-0.5 text-amber-600 dark:text-amber-400">
+                    <svg class="h-5 w-5 fill-amber-500 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.63-1.515 2.63H3.72c-1.346 0-2.188-1.463-1.515-2.63L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-amber-800 dark:text-amber-300">Pasien Memerlukan Follow-Up</h4>
+                    <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Catatan: {{ $patient->follow_up_notes ?? 'Tidak ada catatan' }}</p>
+                </div>
+            </div>
+            <div>
+                <button type="button" 
+                        class="btn-primary bg-amber-600 hover:bg-amber-500 border-amber-600 focus-visible:outline-amber-600 text-xs py-1.5 px-3 rounded-xl whitespace-nowrap"
+                        onclick="openResolveModal()">
+                    Selesaikan Follow-Up
+                </button>
+            </div>
+        </div>
+    @endif
+
     <!-- Header Patient -->
     <div class="card p-6">
         <div class="sm:flex sm:items-center sm:justify-between">
@@ -24,6 +47,14 @@
                 </div>
             </div>
             <div class="mt-5 flex justify-center gap-3 sm:mt-0">
+                @if(!$patient->needs_follow_up)
+                    <button type="button" onclick="openResolveModal()" class="btn-secondary text-xs py-1.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 flex items-center gap-1.5">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21v11h-6l-1-1H5v4m0-4h16" />
+                        </svg>
+                        Tandai Follow-Up
+                    </button>
+                @endif
                 <a href="{{ route('communication.deliveries.create', ['patient_id' => $patient->id]) }}" class="btn-secondary">
                     <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -158,6 +189,7 @@
                                                 @if($event['type'] == 'email') bg-indigo-500 
                                                 @elseif($event['type'] == 'whatsapp') bg-teal-500 
                                                 @elseif($event['type'] == 'visit') bg-green-500 
+                                                @elseif($event['type'] == 'follow_up_log') bg-amber-500
                                                 @else bg-blue-500 @endif 
                                                 flex items-center justify-center ring-8 ring-white dark:ring-slate-800">
                                                 
@@ -167,6 +199,16 @@
                                                     <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                                                 @elseif($event['type'] == 'visit')
                                                     <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                                @elseif($event['type'] == 'follow_up_log')
+                                                    @if(isset($event['action']) && $event['action'] === 'marked')
+                                                        <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21v11h-6l-1-1H5v4m0-4h16" />
+                                                        </svg>
+                                                    @else
+                                                        <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    @endif
                                                 @else
                                                     <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                                                 @endif
@@ -203,4 +245,51 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Follow-Up -->
+<div id="followup-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md hidden" x-cloak>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-slate-200 dark:border-slate-800">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">
+            {{ $patient->needs_follow_up ? 'Selesaikan Follow-Up' : 'Tandai Pasien Perlu Follow-Up' }}
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+            {{ $patient->needs_follow_up ? 'Tulis catatan penyelesaian follow-up untuk pasien ini.' : 'Tulis catatan awal mengapa pasien ini memerlukan follow-up.' }}
+        </p>
+        
+        <form action="{{ route('follow-up.patients.mark-follow-up', $patient) }}" method="POST" class="space-y-4">
+            @csrf
+            
+            <input type="hidden" name="needs_follow_up" value="{{ $patient->needs_follow_up ? '0' : '1' }}">
+
+            <div class="space-y-1">
+                <label for="follow_up_notes" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {{ $patient->needs_follow_up ? 'Catatan Penyelesaian (Opsional)' : 'Catatan Follow-Up (Opsional)' }}
+                </label>
+                <textarea name="follow_up_notes" id="follow_up_notes" rows="3" class="input-field" placeholder="Masukkan catatan di sini..."></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeResolveModal()" type="button" class="btn-secondary">Batal</button>
+                <button type="submit" class="btn-primary">
+                    {{ $patient->needs_follow_up ? 'Selesaikan' : 'Tandai' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openResolveModal() {
+        document.getElementById('followup-modal').classList.remove('hidden');
+    }
+    function closeResolveModal() {
+        document.getElementById('followup-modal').classList.add('hidden');
+    }
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('followup-modal');
+        if (e.target === modal) {
+            closeResolveModal();
+        }
+    });
+</script>
 @endsection

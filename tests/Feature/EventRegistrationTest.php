@@ -370,16 +370,42 @@ class EventRegistrationTest extends TestCase
         $this->assertTrue($patient->needs_follow_up);
         $this->assertEquals('Catatan follow-up penting.', $patient->follow_up_notes);
 
-        // Unmark follow-up
+        // Assert log was created
+        $this->assertDatabaseHas('patient_follow_up_logs', [
+            'patient_id' => $patient->id,
+            'user_id' => $this->admin->id,
+            'action' => 'marked',
+            'notes' => 'Catatan follow-up penting.',
+        ]);
+
+        // Unmark follow-up (Resolve)
         $responseUnmark = $this->actingAs($this->admin)->post(route('follow-up.patients.mark-follow-up', $patient), [
             'needs_follow_up' => 0,
-            'follow_up_notes' => null,
+            'follow_up_notes' => 'Sudah ditindaklanjuti.',
         ]);
 
         $responseUnmark->assertRedirect();
 
         $patient->refresh();
         $this->assertFalse($patient->needs_follow_up);
-        $this->assertNull($patient->follow_up_notes);
+        $this->assertEquals('Sudah ditindaklanjuti.', $patient->follow_up_notes);
+
+        // Assert resolve log was created
+        $this->assertDatabaseHas('patient_follow_up_logs', [
+            'patient_id' => $patient->id,
+            'user_id' => $this->admin->id,
+            'action' => 'resolved',
+            'notes' => 'Sudah ditindaklanjuti.',
+        ]);
+
+        // Assert filter works on index
+        $indexResponse = $this->actingAs($this->admin)->get(route('follow-up.patients.index', ['needs_follow_up' => 1]));
+        $indexResponse->assertStatus(200);
+
+        // Assert timeline works on show
+        $showResponse = $this->actingAs($this->admin)->get(route('follow-up.patients.show', $patient));
+        $showResponse->assertStatus(200);
+        $showResponse->assertSee('Ditandai Perlu Follow-Up');
+        $showResponse->assertSee('Follow-Up Selesai');
     }
 }

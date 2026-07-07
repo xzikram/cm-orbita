@@ -68,6 +68,11 @@ class Patient extends Model
         return $this->hasMany(DocumentDelivery::class);
     }
 
+    public function followUpLogs(): HasMany
+    {
+        return $this->hasMany(PatientFollowUpLog::class)->latest();
+    }
+
     public function reminders(): HasManyThrough
     {
         return $this->hasManyThrough(
