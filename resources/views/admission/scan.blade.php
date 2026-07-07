@@ -78,14 +78,11 @@
     
     <!-- Top Header -->
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 safe-top flex items-center justify-between z-10" style="background-color: #0f172a !important; border-bottom: 1px solid #1e293b !important;">
-        <div class="flex items-center gap-3">
-            <div class="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white overflow-hidden p-1 shadow-sm" style="width: 40px; height: 40px; background-color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+        <div class="flex flex-col items-start gap-1" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+            <div class="relative flex items-center justify-center rounded-xl bg-white overflow-hidden p-1 shadow-sm" style="width: 110px; height: 36px; background-color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px 6px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                 <img src="{{ asset('Logo RS JEC ORBITA.png') }}" class="max-h-full max-w-full object-contain" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="JEC ORBITA Logo">
             </div>
-            <div>
-                <h1 class="text-sm font-extrabold tracking-tight text-white leading-none" style="color: white !important;">Scanner Admisi</h1>
-                <span class="text-[10px] font-semibold text-slate-400" style="color: #94a3b8 !important;">RS JEC ORBITA @ MAKASSAR</span>
-            </div>
+            <h1 class="text-[10px] font-extrabold tracking-wider leading-none" style="color: #e2e8f0 !important; font-size: 10px; font-weight: 800; margin: 2px 0 0 2px; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase;">Scanner Admisi</h1>
         </div>
         <div>
             <a href="{{ route('dashboard') }}" class="text-xs bg-slate-850 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 font-semibold transition-colors" style="background-color: #1e293b; color: white !important; padding: 6px 12px; border-radius: 8px; font-size: 12px; text-decoration: none; border: 1px solid #334155;">
