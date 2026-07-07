@@ -12,35 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS Play CDN for guaranteed responsive layouts on mobile -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: {
-                            50: '#f0f7ff',
-                            100: '#e0effe',
-                            200: '#bbdffc',
-                            300: '#7cc2fa',
-                            400: '#38a5f6',
-                            500: '#0e88eb',
-                            600: '#026bc7',
-                            700: '#0356a1',
-                            800: '#074985',
-                            900: '#0c3e6e',
-                            950: '#082749',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Load styles and scripts via Vite to support offline local execution -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <style>
         body {
             -webkit-tap-highlight-color: transparent;
@@ -99,7 +73,8 @@
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 safe-top flex items-center justify-between z-10">
         <div class="flex items-center gap-3">
             <div class="bg-primary-600/10 p-2 rounded-xl border border-primary-500/20">
-                <svg class="h-5 w-5 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <!-- Explicit size added to prevent inflation if CSS load latency occurs -->
+                <svg class="h-5 w-5 text-primary-500" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16.01h.01" />
                 </svg>
             </div>
@@ -109,7 +84,7 @@
             </div>
         </div>
         <div>
-            <a href="{{ route('dashboard') }}" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 font-semibold transition-colors">
+            <a href="{{ route('dashboard') }}" class="text-xs bg-slate-850 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 font-semibold transition-colors">
                 Dashboard
             </a>
         </div>
@@ -187,7 +162,7 @@
                     </div>
                 @empty
                     <div class="bg-slate-900/50 border border-slate-800/50 border-dashed rounded-2xl py-12 text-center text-slate-500" id="logs-empty-state">
-                        <svg class="mx-auto h-8 w-8 text-slate-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="mx-auto h-8 w-8 text-slate-600 mb-2" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                         <p class="text-xs">Belum ada pasien event yang check-in hari ini.</p>
@@ -248,7 +223,7 @@
     <!-- Error Modal / Toast Overlay -->
     <div id="error-toast" class="fixed top-4 inset-x-4 z-50 hidden flex justify-center pointer-events-none">
         <div class="bg-red-500 text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-3 max-w-sm pointer-events-auto border border-red-400/20">
-            <svg class="h-6 w-6 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="h-6 w-6 text-white shrink-0" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div class="flex-1">
@@ -261,8 +236,8 @@
     <!-- Bottom Navigation Bar -->
     <nav class="bg-slate-900/90 backdrop-blur-md border-t border-slate-800 px-6 pt-3 pb-6 safe-bottom flex justify-around items-center z-10">
         <!-- Tab Button Scanner -->
-        <button id="tab-scanner-btn" class="flex flex-col items-center gap-1 text-primary-500 font-bold transition-all">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button id="tab-scanner-btn" class="flex flex-col items-center gap-1 text-emerald-500 font-bold transition-all">
+            <svg class="h-6 w-6" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
             </svg>
             <span class="text-[10px] tracking-wide">Pindai Tiket</span>
@@ -270,7 +245,7 @@
 
         <!-- Tab Button Logs -->
         <button id="tab-logs-btn" class="flex flex-col items-center gap-1 text-slate-500 font-bold hover:text-slate-400 transition-all">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="h-6 w-6" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <span class="text-[10px] tracking-wide">Kehadiran</span>
@@ -303,8 +278,8 @@
         }
     </script>
 
-    <!-- HTML5-QRCode Scanner Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" integrity="sha512-r6rDA7W6ZeQhvl8S7yRV0 VUtoCOPEjFcWZ1cz+yIja55M0HQ91dIW7gCHOtOnQ/VJ xsU5pUQNf/6B4PA45MGA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- HTML5-QRCode Scanner Library (Local) -->
+    <script src="{{ asset('vendor/html5-qrcode.min.js') }}"></script>
     
     <script>
         let html5Qrcode = null;
@@ -319,9 +294,9 @@
             const logsContent = document.getElementById('tab-logs-content');
 
             scannerBtn.addEventListener('click', function() {
-                scannerBtn.classList.add('text-primary-500');
+                scannerBtn.classList.add('text-emerald-500');
                 scannerBtn.classList.remove('text-slate-500');
-                logsBtn.classList.remove('text-primary-500');
+                logsBtn.classList.remove('text-emerald-500');
                 logsBtn.classList.add('text-slate-500');
 
                 scannerContent.classList.remove('hidden');
@@ -332,9 +307,9 @@
             });
 
             logsBtn.addEventListener('click', function() {
-                logsBtn.classList.add('text-primary-500');
+                logsBtn.classList.add('text-emerald-500');
                 logsBtn.classList.remove('text-slate-500');
-                scannerBtn.classList.remove('text-primary-500');
+                scannerBtn.classList.remove('text-emerald-500');
                 scannerBtn.classList.add('text-slate-500');
 
                 logsContent.classList.remove('hidden');
