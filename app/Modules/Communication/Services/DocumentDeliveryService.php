@@ -104,7 +104,8 @@ class DocumentDeliveryService
             $textBody = trim(preg_replace("/\n{3,}/", "\n\n", $textBody));
 
             if (!empty($password)) {
-                $textBody .= "\n\nPassword untuk membuka file PDF: Tanggal Lahir Anda (Format: DDMMYYYY, contoh: " . $patient->date_of_birth->format('dmY') . ").";
+                $exampleDob = sprintf('%02d%02d%04d', rand(1, 28), rand(1, 12), rand(1975, 2005));
+                $textBody .= "\n\nPassword untuk membuka file PDF: Tanggal Lahir Anda (Format: DDMMYYYY, contoh: " . $exampleDob . ").";
             }
 
             // Create Delivery Record (Pending)
@@ -301,7 +302,8 @@ class DocumentDeliveryService
         $textBody .= "\n\nSilakan unduh dokumen Anda melalui tautan berikut:\n" . $fileUrl;
         
         if ($patient->date_of_birth) {
-            $textBody .= "\n\nPassword untuk membuka file PDF: Tanggal Lahir Anda (Format: DDMMYYYY, contoh: " . $patient->date_of_birth->format('dmY') . ").";
+            $exampleDob = sprintf('%02d%02d%04d', rand(1, 28), rand(1, 12), rand(1975, 2005));
+            $textBody .= "\n\nPassword untuk membuka file PDF: Tanggal Lahir Anda (Format: DDMMYYYY, contoh: " . $exampleDob . ").";
         }
         
         return $textBody;
