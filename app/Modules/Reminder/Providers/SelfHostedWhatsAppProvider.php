@@ -41,7 +41,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
 
             $durationMs = (microtime(true) - $startTime) * 1000;
 
-            if ($response->successful()) {
+            if ($response->successful() && $response->json('success') !== false) {
                 return SendResult::success(
                     messageId: $response->json('messageId') ?? 'selfhosted_' . uniqid(),
                     durationMs: $durationMs
@@ -86,7 +86,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
 
             $durationMs = (microtime(true) - $startTime) * 1000;
 
-            if ($response->successful()) {
+            if ($response->successful() && $response->json('success') !== false) {
                 return SendResult::success(
                     messageId: $response->json('messageId') ?? 'selfhosted_doc_' . uniqid(),
                     durationMs: $durationMs

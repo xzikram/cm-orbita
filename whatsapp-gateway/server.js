@@ -294,23 +294,21 @@ app.post('/reset-session', async (req, res) => {
 app.post('/send-message', async (req, res) => {
     let { clientId, phone, message } = req.body;
     
-    // Fallback: If no clientId, use the first ready client
-    if (!clientId) {
-        for (const [id, clientData] of clients.entries()) {
-            if (clientData.isReady) {
+    let clientData = clientId ? clients.get(clientId) : null;
+    
+    // Fallback: If no clientId or specified client is not ready, use the first ready client
+    if (!clientData || !clientData.isReady) {
+        for (const [id, cData] of clients.entries()) {
+            if (cData.isReady) {
                 clientId = id;
+                clientData = cData;
                 break;
             }
         }
     }
 
-    if (!clientId) {
-        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.' });
-    }
-
-    const clientData = clients.get(clientId);
     if (!clientData || !clientData.isReady) {
-        return res.status(503).json({ error: `WhatsApp client untuk ${clientId} belum siap / terhubung.` });
+        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.' });
     }
 
     if (!phone || !message) {
@@ -326,7 +324,8 @@ app.post('/send-message', async (req, res) => {
         const formattedPhone = `${cleanPhone}@c.us`;
 
         const response = await clientData.client.sendMessage(formattedPhone, message);
-        res.json({ success: true, messageId: response.id.id });
+        const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_msg_${Date.now()}`;
+        res.json({ success: true, messageId });
     } catch (error) {
         console.error(`[${clientId}] Gagal mengirim pesan:`, error);
         res.status(500).json({ error: error.message });
@@ -337,23 +336,21 @@ app.post('/send-message', async (req, res) => {
 app.post('/send-document', async (req, res) => {
     let { clientId, phone, fileUrl, filename, caption } = req.body;
 
-    // Fallback: If no clientId, use the first ready client
-    if (!clientId) {
-        for (const [id, clientData] of clients.entries()) {
-            if (clientData.isReady) {
+    let clientData = clientId ? clients.get(clientId) : null;
+
+    // Fallback: If no clientId or specified client is not ready, use the first ready client
+    if (!clientData || !clientData.isReady) {
+        for (const [id, cData] of clients.entries()) {
+            if (cData.isReady) {
                 clientId = id;
+                clientData = cData;
                 break;
             }
         }
     }
 
-    if (!clientId) {
-        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.' });
-    }
-
-    const clientData = clients.get(clientId);
     if (!clientData || !clientData.isReady) {
-        return res.status(503).json({ error: `WhatsApp client untuk ${clientId} belum siap / terhubung.` });
+        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.' });
     }
 
     if (!phone || !fileUrl || !filename) {
@@ -370,23 +367,46 @@ app.post('/send-document', async (req, res) => {
 
         console.log(`[${clientId}] Mengunduh file dari URL: ${fileUrl}`);
         
-        // Fetch the file as an arraybuffer
-        const fileResponse = await axios.get(fileUrl, { 
-            responseType: 'arraybuffer',
-            timeout: 15000 // 15 seconds timeout
-        });
-        
-        const mimeType = fileResponse.headers['content-type'] || 'application/pdf';
-        const base64Data = Buffer.from(fileResponse.data, 'binary').toString('base64');
-        
-        const media = new MessageMedia(mimeType, base64Data, filename);
+        let media = null;
+        try {
+            // Fetch the file as an arraybuffer
+            const fileResponse = await axios.get(fileUrl, { 
+                responseType: 'arraybuffer',
+                timeout: 15000 // 15 seconds timeout
+            });
+            
+            const mimeType = fileResponse.headers['content-type'] || 'application/pdf';
+            const base64Data = Buffer.from(fileResponse.data, 'binary').toString('base64');
+            media = new MessageMedia(mimeType, base64Data, filename);
+        } catch (downloadErr) {
+            console.warn(`[${clientId}] Gagal mengunduh file via URL (${downloadErr.message}), mencoba fallback berkas lokal...`);
+            
+            // Try extracting relative path from fileUrl (e.g., /storage/deliveries/...)
+            try {
+                const parsedUrl = new URL(fileUrl);
+                const relPath = parsedUrl.pathname.replace(/^\/storage\//, '');
+                const localDiskPath = path.join(__dirname, '..', 'storage', 'app', 'public', relPath);
+                
+                if (fs.existsSync(localDiskPath)) {
+                    console.log(`[${clientId}] Berhasil menemukan berkas di lokal disk: ${localDiskPath}`);
+                    const fileBuffer = fs.readFileSync(localDiskPath);
+                    const base64Data = fileBuffer.toString('base64');
+                    media = new MessageMedia('application/pdf', base64Data, filename);
+                } else {
+                    throw downloadErr;
+                }
+            } catch (fallbackErr) {
+                throw downloadErr;
+            }
+        }
         
         console.log(`[${clientId}] Mengirim berkas dokumen ke ${formattedPhone}...`);
         const response = await clientData.client.sendMessage(formattedPhone, media, { 
             caption: caption || '' 
         });
         
-        res.json({ success: true, messageId: response.id.id });
+        const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_doc_${Date.now()}`;
+        res.json({ success: true, messageId });
     } catch (error) {
         console.error(`[${clientId}] Gagal mengirim dokumen:`, error);
         res.status(500).json({ error: error.message });

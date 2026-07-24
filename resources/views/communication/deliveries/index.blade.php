@@ -74,8 +74,18 @@
                                 <span class="badge-yellow">{{ strtoupper($delivery->status) }}</span>
                             @endif
                         </td>
-                        <td class="text-right">
-                            <a href="{{ route('communication.deliveries.show', $delivery) }}" class="table-action-primary">Detail</a>
+                        <td class="text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-x-2">
+                                @if($delivery->status === 'failed')
+                                    <form action="{{ route('communication.deliveries.markAsSent', $delivery) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" onclick="return confirm('Tandai pengiriman ini sebagai SENT (Terkirim)?')" class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-600/20 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all" title="Tandai Sudah Terkirim">
+                                            Tandai Terkirim
+                                        </button>
+                                    </form>
+                                @endif
+                                <a href="{{ route('communication.deliveries.show', $delivery) }}" class="table-action-primary">Detail</a>
+                            </div>
                         </td>
                     </tr>
                 @empty

@@ -15,18 +15,26 @@
     <div class="space-y-6">
         @if($delivery->status === 'failed' && $delivery->error_message)
             <div class="rounded-md bg-red-50 dark:bg-red-950/20 p-4 border border-red-200 dark:border-red-800/30">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Gagal Mengirim Dokumen</h3>
-                        <div class="mt-2 text-sm text-red-700 dark:text-red-400">
-                            <p>{{ $delivery->error_message }}</p>
+                <div class="flex items-start justify-between gap-x-4">
+                    <div class="flex items-start gap-x-3">
+                        <div class="flex-shrink-0 mt-0.5">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Gagal Mengirim Dokumen</h3>
+                            <div class="mt-1 text-sm text-red-700 dark:text-red-400">
+                                <p>{{ $delivery->error_message }}</p>
+                            </div>
                         </div>
                     </div>
+                    <form action="{{ route('communication.deliveries.markAsSent', $delivery) }}" method="POST" class="shrink-0">
+                        @csrf
+                        <button type="submit" onclick="return confirm('Apakah Anda yakin ingin mengubah status pengiriman ini menjadi Terkirim (SENT)?')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                            Tandai Terkirim
+                        </button>
+                    </form>
                 </div>
             </div>
         @endif

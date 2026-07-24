@@ -263,12 +263,17 @@ class DocumentDeliveryController extends Controller
         $delivery->update([
             'status' => 'sent',
             'sent_at' => now(),
+            'error_message' => null,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Status pengiriman berhasil diperbarui.'
-        ]);
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Status pengiriman berhasil diperbarui.'
+            ]);
+        }
+
+        return back()->with('success', 'Status pengiriman berhasil diperbarui menjadi Terkirim.');
     }
 
     public function whatsappStatus()
