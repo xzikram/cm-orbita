@@ -139,7 +139,7 @@ class DocumentDeliveryController extends Controller
                 'email' => $request->recipient_email,
                 'date_of_birth' => $dob,
                 'registration_source' => 'simrs',
-                'registration_source_id' => $patientId,
+                'registration_source_id' => null,
             ]);
         } else {
             $patient = $this->registrationService->register([

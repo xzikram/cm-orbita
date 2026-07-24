@@ -31,12 +31,22 @@ class PatientRegistrationService
         $notes = $data['notes'] ?? null;
         
         $source = $data['registration_source'] ?? 'admin';
-        $sourceId = $data['registration_source_id'] ?? null;
+        $sourceId = isset($data['registration_source_id']) && is_numeric($data['registration_source_id']) 
+            ? (int) $data['registration_source_id'] 
+            : null;
 
         $patient = null;
+        $mrn = $data['medical_record_number'] ?? null;
 
-        // 1. Try to deduplicate by NIK first (if provided)
-        if (!empty($nik)) {
+        // 0. Try to deduplicate by Medical Record Number (MRN) if provided
+        if (!empty($mrn)) {
+            $patient = Patient::where('clinic_id', $clinicId)
+                ->where('medical_record_number', $mrn)
+                ->first();
+        }
+
+        // 1. Try to deduplicate by NIK (if provided)
+        if (!$patient && !empty($nik)) {
             $patient = Patient::where('clinic_id', $clinicId)
                 ->where('nik', $nik)
                 ->first();
