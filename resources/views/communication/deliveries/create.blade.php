@@ -95,11 +95,51 @@
             @endif
 
             <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
-                <!-- Select Patient -->
-                <div>
-                    <label for="patient_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Pasien</label>
+                <!-- Patient Source Selector -->
+                <div class="sm:col-span-2 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2.5">Pilih Sumber Data Pasien</label>
+                    <div class="inline-flex p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" id="tab-simrs" onclick="switchPatientSource('simrs')" class="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all duration-150 bg-emerald-500 text-white shadow-sm">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <span>Pasien SIM RS (Hari Ini & Live Search)</span>
+                        </button>
+                        <button type="button" id="tab-manual" onclick="switchPatientSource('manual')" class="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg transition-all duration-150 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span>Pasien Manual / Database Lokal</span>
+                        </button>
+                    </div>
+                    <input type="hidden" name="patient_source" id="patient_source" value="simrs">
+                    <input type="hidden" name="simrs_patient_name" id="simrs_patient_name" value="">
+                </div>
+
+                <!-- SIM RS Patient Select Container -->
+                <div id="container-simrs-patient">
+                    <label for="simrs_patient_select" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+                        Pasien SIM RS
+                        <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400 ml-1.5">(Hari Ini & Live Search SIM RS)</span>
+                    </label>
                     <div class="mt-2">
-                        <select id="patient_id" name="patient_id" required class="input-field select2-enable w-full">
+                        <select id="simrs_patient_select" name="patient_id" class="input-field w-full">
+                            <option value="">-- Cari Nama / No. RM Pasien SIM RS --</option>
+                            @foreach($simrsPatients as $sp)
+                                <option value="{{ $sp['patient_id'] }}" data-name="{{ $sp['name'] }}" data-email="{{ $sp['email'] }}" data-phone="{{ $sp['phone'] }}" data-dob="{{ $sp['date_of_birth'] }}">
+                                    {{ $sp['name'] }} (RM: {{ $sp['patient_id'] }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @error('patient_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <!-- Manual / Local Patient Select Container -->
+                <div id="container-manual-patient" style="display: none;">
+                    <label for="patient_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Pasien Database Lokal / Manual</label>
+                    <div class="mt-2">
+                        <select id="patient_id" class="input-field select2-enable w-full">
                             <option value="">-- Cari dan Pilih Pasien --</option>
                             @php
                                 $oldPatientId = old('patient_id');
@@ -115,7 +155,6 @@
                             @endforeach
                         </select>
                     </div>
-                    @error('patient_id')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <!-- Patient DOB -->
@@ -353,6 +392,7 @@
     }
 
     const patientSelect = document.getElementById('patient_id');
+    const simrsPatientSelect = document.getElementById('simrs_patient_select');
     const channelSelect = document.getElementById('channel');
     
     // Groups/Fields
@@ -368,7 +408,93 @@
     const passwordHelpText = document.getElementById('password-help-text');
     const manualDob = document.getElementById('manual_dob');
 
+    function switchPatientSource(source) {
+        const tabSimrs = document.getElementById('tab-simrs');
+        const tabManual = document.getElementById('tab-manual');
+        const containerSimrs = document.getElementById('container-simrs-patient');
+        const containerManual = document.getElementById('container-manual-patient');
+        const patientSourceInput = document.getElementById('patient_source');
+
+        const simrsSelect = $('#simrs_patient_select');
+        const manualSelect = $('#patient_id');
+
+        patientSourceInput.value = source;
+
+        if (source === 'simrs') {
+            tabSimrs.className = "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all duration-150 bg-emerald-500 text-white shadow-sm";
+            tabManual.className = "flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg transition-all duration-150 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+            
+            containerSimrs.style.display = 'block';
+            containerManual.style.display = 'none';
+
+            simrsSelect.attr('name', 'patient_id');
+            manualSelect.removeAttr('name');
+
+            updateSimrsPatientDetails();
+        } else {
+            tabManual.className = "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all duration-150 bg-emerald-500 text-white shadow-sm";
+            tabSimrs.className = "flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg transition-all duration-150 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+            
+            containerManual.style.display = 'block';
+            containerSimrs.style.display = 'none';
+
+            manualSelect.attr('name', 'patient_id');
+            simrsSelect.removeAttr('name');
+
+            updatePatientDetails(false);
+        }
+    }
+
+    function updateSimrsPatientDetails() {
+        const selectedOption = simrsPatientSelect.options[simrsPatientSelect.selectedIndex];
+        if (!selectedOption || selectedOption.value === '') {
+            recipientEmail.value = '';
+            recipientPhone.value = '';
+            manualDob.value = '';
+            document.getElementById('simrs_patient_name').value = '';
+
+            passwordProtect.disabled = false;
+            passwordHelpText.innerText = "Password untuk membuka file PDF adalah tanggal lahir pasien (Format: DDMMYYYY, contoh: 15051990).";
+            passwordHelpText.classList.remove('text-red-500');
+            passwordHelpText.classList.add('text-slate-500');
+            return;
+        }
+
+        const name = selectedOption.getAttribute('data-name') || '';
+        const email = selectedOption.getAttribute('data-email') || '';
+        const phone = selectedOption.getAttribute('data-phone') || '';
+        const dob = selectedOption.getAttribute('data-dob') || '';
+
+        document.getElementById('simrs_patient_name').value = name;
+        recipientEmail.value = email;
+        recipientPhone.value = phone;
+        manualDob.value = dob;
+
+        if (dob) {
+            const parts = dob.split('-');
+            if (parts.length === 3) {
+                const formattedDob = parts[2] + parts[1] + parts[0];
+                passwordProtect.disabled = false;
+                passwordHelpText.innerText = `Password untuk pasien ini: ${formattedDob} (berdasarkan tanggal lahir ${parts[2]}-${parts[1]}-${parts[0]}).`;
+                passwordHelpText.classList.remove('text-red-500');
+                passwordHelpText.classList.add('text-slate-500');
+            }
+        } else {
+            passwordProtect.checked = false;
+            passwordProtect.disabled = true;
+            passwordHelpText.innerText = "Pasien SIM RS ini tidak memiliki data tanggal lahir. Proteksi password tidak dapat diaktifkan.";
+            passwordHelpText.classList.remove('text-slate-500');
+            passwordHelpText.classList.add('text-red-500', 'font-medium');
+        }
+    }
+
     function updatePasswordHelpText() {
+        const source = document.getElementById('patient_source').value;
+        if (source === 'simrs') {
+            updateSimrsPatientDetails();
+            return;
+        }
+
         const selectedOption = patientSelect.options[patientSelect.selectedIndex];
         const val = selectedOption ? selectedOption.value : '';
         const isExisting = val && !isNaN(val);
@@ -542,6 +668,33 @@
     }
 
     $(document).ready(function() {
+        // Initialize Select2 on SIM RS dropdown with Live Search AJAX
+        $('#simrs_patient_select').select2({
+            placeholder: "-- Cari Nama / No. RM Pasien SIM RS --",
+            allowClear: true,
+            ajax: {
+                url: "{{ route('communication.simrs.search-patients') }}",
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    return { results: data.results };
+                },
+                cache: true
+            }
+        }).on('select2:select', function(e) {
+            const data = e.params.data;
+            document.getElementById('simrs_patient_name').value = data.name || '';
+            recipientEmail.value = data.email || '';
+            recipientPhone.value = data.phone || '';
+            manualDob.value = data.dob || '';
+            updatePasswordHelpText();
+        }).on('change', function() {
+            updateSimrsPatientDetails();
+        });
+
         // Initialize Select2 on patient_id dropdown with tagging enabled
         $('#patient_id').select2({
             tags: true,
@@ -572,7 +725,7 @@
         channelSelect.addEventListener('change', toggleDeliveryMethod);
 
         // Initial execution
-        updatePatientDetails(true);
+        switchPatientSource('simrs');
         toggleDeliveryMethod();
     });
 </script>

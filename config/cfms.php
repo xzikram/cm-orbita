@@ -110,4 +110,14 @@ return [
         // 'inventory' => ['enabled' => false, 'name' => 'Inventory Non SIMRS'],
         // 'quality_control' => ['enabled' => false, 'name' => 'Quality Control Klinik'],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | SIM RS Integration Bridge Configuration
+    |--------------------------------------------------------------------------
+    */
+    'simrs' => [
+        'bridge_url' => env('SIMRS_BRIDGE_URL', 'http://192.168.40.141:88/qc/bridge.ashx'),
+        'bridge_token' => env('SIMRS_BRIDGE_TOKEN', 'OrbitaSecureBridge2026'),
+    ],
 ];

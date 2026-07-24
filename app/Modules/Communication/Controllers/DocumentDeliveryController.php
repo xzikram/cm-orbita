@@ -12,11 +12,14 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 
+use App\Core\Services\SimrsBridgeService;
+
 class DocumentDeliveryController extends Controller
 {
     public function __construct(
         protected DocumentDeliveryService $deliveryService,
-        protected \App\Core\Services\PatientRegistrationService $registrationService
+        protected \App\Core\Services\PatientRegistrationService $registrationService,
+        protected SimrsBridgeService $simrsBridgeService
     ) {}
 
     public function index()
@@ -33,6 +36,8 @@ class DocumentDeliveryController extends Controller
     {
         $clinicId = Auth::user()->clinic_id;
         $patients = Patient::where('clinic_id', $clinicId)->active()->orderBy('name')->get();
+        $simrsPatients = $this->simrsBridgeService->getTodayPatients(50);
+
         $documentTypes = \App\Models\DocumentType::where('clinic_id', $clinicId)->active()->orderBy('name')->get();
         $templates = \App\Models\EmailTemplate::where('clinic_id', $clinicId)->active()->orderBy('name')->get();
         $accounts = EmailAccount::where('clinic_id', $clinicId)->active()->get();
@@ -62,7 +67,30 @@ class DocumentDeliveryController extends Controller
             $whatsappConnected = $provider->checkStatus();
         }
 
-        return view('communication.deliveries.create', compact('patients', 'documentTypes', 'templates', 'accounts', 'selectedPatient', 'processedDoc', 'processedDocs', 'whatsappConnected'));
+        return view('communication.deliveries.create', compact('patients', 'simrsPatients', 'documentTypes', 'templates', 'accounts', 'selectedPatient', 'processedDoc', 'processedDocs', 'whatsappConnected'));
+    }
+
+    /**
+     * AJAX endpoint to live search SIM RS patients.
+     */
+    public function searchSimrsPatients(Request $request)
+    {
+        $term = $request->get('q', '');
+        $patients = $this->simrsBridgeService->searchPatients($term, 20);
+
+        $results = array_map(function ($p) {
+            return [
+                'id' => $p['patient_id'],
+                'text' => $p['name'] . ' (RM: ' . $p['patient_id'] . ')',
+                'name' => $p['name'],
+                'mrn' => $p['patient_id'],
+                'phone' => $p['phone'],
+                'email' => $p['email'],
+                'dob' => $p['date_of_birth'],
+            ];
+        }, $patients);
+
+        return response()->json(['results' => $results]);
     }
 
     public function store(Request $request)
@@ -90,19 +118,29 @@ class DocumentDeliveryController extends Controller
         }
 
         $patientId = $request->patient_id;
-        
+        $dob = null;
+        if ($request->filled('manual_dob')) {
+            try {
+                $dob = \Carbon\Carbon::parse($request->manual_dob)->format('Y-m-d');
+            } catch (\Exception $e) {
+                // ignore
+            }
+        }
+
         if (is_numeric($patientId)) {
             $patient = Patient::findOrFail($patientId);
+        } elseif ($request->get('patient_source') === 'simrs') {
+            $simrsName = $request->get('simrs_patient_name', $patientId);
+            $patient = $this->registrationService->register([
+                'medical_record_number' => $patientId,
+                'name' => $simrsName,
+                'phone' => $request->recipient_phone,
+                'email' => $request->recipient_email,
+                'date_of_birth' => $dob,
+                'registration_source' => 'simrs',
+                'registration_source_id' => $patientId,
+            ]);
         } else {
-            $dob = null;
-            if ($request->filled('manual_dob')) {
-                try {
-                    $dob = \Carbon\Carbon::parse($request->manual_dob)->format('Y-m-d');
-                } catch (\Exception $e) {
-                    // ignore
-                }
-            }
-
             $patient = $this->registrationService->register([
                 'name' => $patientId,
                 'phone' => $request->recipient_phone,
