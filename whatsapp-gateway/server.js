@@ -20,6 +20,25 @@ app.use((req, res, next) => {
 // Map to store WhatsApp clients keyed by clientId
 const clients = new Map();
 
+// Helper to execute WhatsApp actions sequentially per client with a settling delay
+function queueClientAction(clientData, fn) {
+    if (!clientData.actionQueue) {
+        clientData.actionQueue = Promise.resolve();
+    }
+
+    const nextAction = clientData.actionQueue.then(async () => {
+        const res = await fn();
+        await new Promise(resolve => setTimeout(resolve, 800));
+        return res;
+    }).catch(async (err) => {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        throw err;
+    });
+
+    clientData.actionQueue = nextAction.catch(() => {});
+    return nextAction;
+}
+
 // Helper to get or create client instance
 function getOrCreateClient(clientId) {
     if (clients.has(clientId)) {
@@ -323,7 +342,9 @@ app.post('/send-message', async (req, res) => {
         }
         const formattedPhone = `${cleanPhone}@c.us`;
 
-        const response = await clientData.client.sendMessage(formattedPhone, message);
+        const response = await queueClientAction(clientData, () => 
+            clientData.client.sendMessage(formattedPhone, message)
+        );
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_msg_${Date.now()}`;
         res.json({ success: true, messageId });
     } catch (error) {
@@ -401,9 +422,11 @@ app.post('/send-document', async (req, res) => {
         }
         
         console.log(`[${clientId}] Mengirim berkas dokumen ke ${formattedPhone}...`);
-        const response = await clientData.client.sendMessage(formattedPhone, media, { 
-            caption: caption || '' 
-        });
+        const response = await queueClientAction(clientData, () =>
+            clientData.client.sendMessage(formattedPhone, media, { 
+                caption: caption || '' 
+            })
+        );
         
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_doc_${Date.now()}`;
         res.json({ success: true, messageId });

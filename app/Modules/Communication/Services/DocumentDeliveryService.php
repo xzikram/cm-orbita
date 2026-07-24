@@ -50,7 +50,8 @@ class DocumentDeliveryService
         string $channel = 'email',
         ?string $recipientPhone = null,
         ?string $password = null,
-        ?int $processedDocumentId = null
+        ?int $processedDocumentId = null,
+        bool $includeCaption = true
     ): DocumentDelivery {
         // 1. Temporarily store the file
         $fileName = $file->getClientOriginalName();
@@ -96,16 +97,20 @@ class DocumentDeliveryService
 
             $fileUrl = asset(Storage::url($publicPath));
 
-            // Convert HTML template body to plain text for WhatsApp
-            $textBody = preg_replace('/<br\s*\/?>/i', "\n", $htmlBody);
-            $textBody = preg_replace('/<\/p>/i', "\n\n", $textBody);
-            $textBody = strip_tags($textBody);
-            $textBody = html_entity_decode($textBody, ENT_QUOTES, 'UTF-8');
-            $textBody = trim(preg_replace("/\n{3,}/", "\n\n", $textBody));
+            if ($includeCaption) {
+                // Convert HTML template body to plain text for WhatsApp
+                $textBody = preg_replace('/<br\s*\/?>/i', "\n", $htmlBody);
+                $textBody = preg_replace('/<\/p>/i', "\n\n", $textBody);
+                $textBody = strip_tags($textBody);
+                $textBody = html_entity_decode($textBody, ENT_QUOTES, 'UTF-8');
+                $textBody = trim(preg_replace("/\n{3,}/", "\n\n", $textBody));
 
-            if (!empty($password)) {
-                $exampleDob = sprintf('%02d%02d%04d', rand(1, 28), rand(1, 12), rand(1975, 2005));
-                $textBody .= "\n\nPassword untuk membuka file PDF: Tanggal Lahir Anda (Format: DDMMYYYY, contoh: " . $exampleDob . ").";
+                if (!empty($password)) {
+                    $exampleDob = sprintf('%02d%02d%04d', rand(1, 28), rand(1, 12), rand(1975, 2005));
+                    $textBody .= "\n\nPassword untuk membuka file PDF: Tanggal Lahir Anda (Format: DDMMYYYY, contoh: " . $exampleDob . ").";
+                }
+            } else {
+                $textBody = '';
             }
 
             // Create Delivery Record (Pending)
@@ -339,8 +344,12 @@ class DocumentDeliveryService
         $deliveries = [];
 
         if ($channel === 'whatsapp') {
-            // For WhatsApp: send one by one
-            foreach ($processedDocs as $doc) {
+            // For WhatsApp: send one by one with caption only on first file
+            foreach ($processedDocs as $index => $doc) {
+                if ($index > 0) {
+                    usleep(1500000); // 1.5 seconds delay between WhatsApp messages
+                }
+
                 $filePath = Storage::disk('public')->path($doc->generated_file_path);
                 $file = new UploadedFile(
                     $filePath,
@@ -361,7 +370,8 @@ class DocumentDeliveryService
                     channel: 'whatsapp',
                     recipientPhone: $recipientPhone,
                     password: $password,
-                    processedDocumentId: $doc->id
+                    processedDocumentId: $doc->id,
+                    includeCaption: ($index === 0)
                 );
             }
         } else {
@@ -511,7 +521,7 @@ class DocumentDeliveryService
      * @param array $files
      * @param string|null $recipientEmail
      * @param int $userId
-     * @param string $channel
+     * @string $channel
      * @param string|null $recipientPhone
      * @param string|null $password
      * @return array
@@ -531,8 +541,12 @@ class DocumentDeliveryService
         $deliveries = [];
 
         if ($channel === 'whatsapp') {
-            // For WhatsApp: send one by one
-            foreach ($files as $file) {
+            // For WhatsApp: send one by one with caption only on first file
+            foreach ($files as $index => $file) {
+                if ($index > 0) {
+                    usleep(1500000); // 1.5 seconds delay between WhatsApp messages
+                }
+
                 $deliveries[] = $this->sendDocument(
                     patient: $patient,
                     documentType: $documentType,
@@ -543,7 +557,8 @@ class DocumentDeliveryService
                     userId: $userId,
                     channel: 'whatsapp',
                     recipientPhone: $recipientPhone,
-                    password: $password
+                    password: $password,
+                    includeCaption: ($index === 0)
                 );
             }
         } else {
