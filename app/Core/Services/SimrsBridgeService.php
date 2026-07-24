@@ -76,7 +76,6 @@ class SimrsBridgeService
     public function searchPatients(string $term, int $limit = 20): array
     {
         $cleanTerm = str_replace("'", "''", trim($term));
-        $noDashTerm = str_replace('-', '', $cleanTerm);
 
         if (empty($cleanTerm)) {
             return $this->getTodayPatients($limit);
@@ -94,7 +93,6 @@ class SimrsBridgeService
                 p.Email
             FROM Patient p
             WHERE p.MedicalNo LIKE '%{$cleanTerm}%'
-               OR REPLACE(p.MedicalNo, '-', '') LIKE '%{$noDashTerm}%'
                OR p.PatientID LIKE '%{$cleanTerm}%'
                OR p.FirstName LIKE '%{$cleanTerm}%'
                OR p.LastName LIKE '%{$cleanTerm}%'

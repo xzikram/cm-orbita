@@ -445,6 +445,8 @@
         }
     }
 
+    let lastSimrsSelectedData = null;
+
     function updateSimrsPatientDetails() {
         const selectedOption = simrsPatientSelect.options[simrsPatientSelect.selectedIndex];
         if (!selectedOption || selectedOption.value === '') {
@@ -452,6 +454,7 @@
             recipientPhone.value = '';
             manualDob.value = '';
             document.getElementById('simrs_patient_name').value = '';
+            lastSimrsSelectedData = null;
 
             passwordProtect.disabled = false;
             passwordHelpText.innerText = "Password untuk membuka file PDF adalah tanggal lahir pasien (Format: DDMMYYYY, contoh: 15051990).";
@@ -460,18 +463,25 @@
             return;
         }
 
-        const name = selectedOption.getAttribute('data-name') || '';
-        const email = selectedOption.getAttribute('data-email') || '';
-        const phone = selectedOption.getAttribute('data-phone') || '';
-        const dob = selectedOption.getAttribute('data-dob') || '';
+        let name = selectedOption.getAttribute('data-name');
+        let email = selectedOption.getAttribute('data-email');
+        let phone = selectedOption.getAttribute('data-phone');
+        let dob = selectedOption.getAttribute('data-dob');
 
-        document.getElementById('simrs_patient_name').value = name;
-        recipientEmail.value = email;
-        recipientPhone.value = phone;
-        manualDob.value = dob;
+        if ((name === null || name === '') && lastSimrsSelectedData) {
+            name = lastSimrsSelectedData.name || '';
+            email = lastSimrsSelectedData.email || '';
+            phone = lastSimrsSelectedData.phone || '';
+            dob = lastSimrsSelectedData.dob || '';
+        }
 
-        if (dob) {
-            const parts = dob.split('-');
+        if (name) document.getElementById('simrs_patient_name').value = name;
+        if (email !== null) recipientEmail.value = email || '';
+        if (phone !== null) recipientPhone.value = phone || '';
+        if (dob !== null) manualDob.value = dob || '';
+
+        if (manualDob.value) {
+            const parts = manualDob.value.split('-');
             if (parts.length === 3) {
                 const formattedDob = parts[2] + parts[1] + parts[0];
                 passwordProtect.disabled = false;
@@ -686,10 +696,21 @@
             }
         }).on('select2:select', function(e) {
             const data = e.params.data;
+            lastSimrsSelectedData = data;
+
             document.getElementById('simrs_patient_name').value = data.name || '';
             recipientEmail.value = data.email || '';
             recipientPhone.value = data.phone || '';
             manualDob.value = data.dob || '';
+
+            const opt = simrsPatientSelect.options[simrsPatientSelect.selectedIndex];
+            if (opt) {
+                opt.setAttribute('data-name', data.name || '');
+                opt.setAttribute('data-email', data.email || '');
+                opt.setAttribute('data-phone', data.phone || '');
+                opt.setAttribute('data-dob', data.dob || '');
+            }
+
             updatePasswordHelpText();
         }).on('change', function() {
             updateSimrsPatientDetails();
