@@ -52,6 +52,7 @@ class SimrsBridgeService
             SELECT TOP {$limit} 
                 r.RegistrationNo, 
                 r.PatientID, 
+                p.MedicalNo,
                 p.FirstName, 
                 p.LastName, 
                 p.DateOfBirth, 
@@ -70,11 +71,13 @@ class SimrsBridgeService
     }
 
     /**
-     * Search patients in SIM RS by term (Name or PatientID/MRN).
+     * Search patients in SIM RS by term (Name or PatientID/MedicalNo/Phone).
      */
     public function searchPatients(string $term, int $limit = 20): array
     {
         $cleanTerm = str_replace("'", "''", trim($term));
+        $noDashTerm = str_replace('-', '', $cleanTerm);
+
         if (empty($cleanTerm)) {
             return $this->getTodayPatients($limit);
         }
@@ -82,6 +85,7 @@ class SimrsBridgeService
         $sql = "
             SELECT TOP {$limit} 
                 p.PatientID, 
+                p.MedicalNo,
                 p.FirstName, 
                 p.LastName, 
                 p.DateOfBirth, 
@@ -89,7 +93,9 @@ class SimrsBridgeService
                 p.MobilePhoneNo, 
                 p.Email
             FROM Patient p
-            WHERE p.PatientID LIKE '%{$cleanTerm}%'
+            WHERE p.MedicalNo LIKE '%{$cleanTerm}%'
+               OR REPLACE(p.MedicalNo, '-', '') LIKE '%{$noDashTerm}%'
+               OR p.PatientID LIKE '%{$cleanTerm}%'
                OR p.FirstName LIKE '%{$cleanTerm}%'
                OR p.LastName LIKE '%{$cleanTerm}%'
                OR p.PhoneNo LIKE '%{$cleanTerm}%'
@@ -123,10 +129,12 @@ class SimrsBridgeService
                 $dob = $dobParts[0] ?? null;
             }
 
+            $mrn = !empty($row['MedicalNo']) ? $row['MedicalNo'] : ($row['PatientID'] ?? '');
+
             $results[] = [
                 'id' => $row['PatientID'] ?? null,
                 'patient_id' => $row['PatientID'] ?? null,
-                'medical_record_number' => $row['PatientID'] ?? null,
+                'medical_record_number' => $mrn,
                 'name' => $name,
                 'phone' => $phone,
                 'email' => $row['Email'] ?? '',

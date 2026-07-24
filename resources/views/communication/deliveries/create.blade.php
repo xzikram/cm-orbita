@@ -127,7 +127,7 @@
                             <option value="">-- Cari Nama / No. RM Pasien SIM RS --</option>
                             @foreach($simrsPatients as $sp)
                                 <option value="{{ $sp['patient_id'] }}" data-name="{{ $sp['name'] }}" data-email="{{ $sp['email'] }}" data-phone="{{ $sp['phone'] }}" data-dob="{{ $sp['date_of_birth'] }}">
-                                    {{ $sp['name'] }} (RM: {{ $sp['patient_id'] }})
+                                    {{ $sp['name'] }} (RM: {{ $sp['medical_record_number'] ?? $sp['patient_id'] }})
                                 </option>
                             @endforeach
                         </select>

@@ -79,11 +79,12 @@ class DocumentDeliveryController extends Controller
         $patients = $this->simrsBridgeService->searchPatients($term, 20);
 
         $results = array_map(function ($p) {
+            $mrn = !empty($p['medical_record_number']) ? $p['medical_record_number'] : $p['patient_id'];
             return [
                 'id' => $p['patient_id'],
-                'text' => $p['name'] . ' (RM: ' . $p['patient_id'] . ')',
+                'text' => $p['name'] . ' (RM: ' . $mrn . ')',
                 'name' => $p['name'],
-                'mrn' => $p['patient_id'],
+                'mrn' => $mrn,
                 'phone' => $p['phone'],
                 'email' => $p['email'],
                 'dob' => $p['date_of_birth'],
