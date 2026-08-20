@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(\App\Core\Middleware\EnsureDeviceId::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(SessionSecurity::class);
 

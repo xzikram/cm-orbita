@@ -327,9 +327,15 @@ class DocumentDeliveryController extends Controller
             'active_provider' => config('whatsapp.provider'),
         ];
         
+        $deviceId = $request->cookie(\App\Core\Middleware\EnsureDeviceId::COOKIE_NAME)
+            ?: $request->cookie('cfms_device_id')
+            ?: $request->attributes->get('device_id')
+            ?: ('dev_' . substr(md5(Auth::id() ?? 'guest'), 0, 12));
+        
+        $clientId = 'device-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $deviceId);
+        
         if ($status['active_provider'] === 'selfhosted') {
             try {
-                $clientId = 'user-' . Auth::id();
                 $response = \Illuminate\Support\Facades\Http::timeout(3)->get($url . '/status', [
                     'clientId' => $clientId
                 ]);
@@ -344,16 +350,21 @@ class DocumentDeliveryController extends Controller
             }
         }
         
-        return view('communication.whatsapp.status', compact('status'));
+        return view('communication.whatsapp.status', compact('status', 'clientId', 'deviceId'));
     }
 
-    public function checkWhatsAppConnection()
+    public function checkWhatsAppConnection(Request $request)
     {
         $provider = app(\App\Modules\Reminder\Contracts\WhatsAppProviderInterface::class);
         $connected = false;
         
+        $deviceId = $request->cookie(\App\Core\Middleware\EnsureDeviceId::COOKIE_NAME)
+            ?: $request->cookie('cfms_device_id')
+            ?: $request->attributes->get('device_id')
+            ?: 'default';
+        
         if ($provider->getProviderName() === 'selfhosted') {
-            $connected = \Illuminate\Support\Facades\Cache::remember('wa_connected_' . Auth::id(), 10, function () use ($provider) {
+            $connected = \Illuminate\Support\Facades\Cache::remember('wa_connected_dev_' . $deviceId, 10, function () use ($provider) {
                 return $provider->checkStatus();
             });
         }

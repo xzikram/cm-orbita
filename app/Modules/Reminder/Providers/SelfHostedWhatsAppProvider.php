@@ -22,7 +22,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function sendMessage(string $phone, string $message): SendResult
     {
         $startTime = microtime(true);
-        $clientId = \Illuminate\Support\Facades\Auth::check() ? 'user-' . \Illuminate\Support\Facades\Auth::id() : null;
+        $clientId = $this->getClientId();
 
         try {
             $endpoint = rtrim($this->url, '/') . '/send-message';
@@ -65,7 +65,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption): SendResult
     {
         $startTime = microtime(true);
-        $clientId = \Illuminate\Support\Facades\Auth::check() ? 'user-' . \Illuminate\Support\Facades\Auth::id() : null;
+        $clientId = $this->getClientId();
 
         try {
             $endpoint = rtrim($this->url, '/') . '/send-document';
@@ -116,7 +116,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function checkStatus(): bool
     {
         try {
-            $clientId = \Illuminate\Support\Facades\Auth::check() ? 'user-' . \Illuminate\Support\Facades\Auth::id() : null;
+            $clientId = $this->getClientId();
             $endpoint = rtrim($this->url, '/') . '/status';
             
             $params = [];
@@ -135,5 +135,19 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function getProviderName(): string
     {
         return 'selfhosted';
+    }
+
+    public function getClientId(): ?string
+    {
+        $deviceId = request()?->cookie(\App\Core\Middleware\EnsureDeviceId::COOKIE_NAME)
+            ?: request()?->cookie('cfms_device_id')
+            ?: request()?->header('X-Device-Id')
+            ?: request()?->attributes?->get('device_id');
+
+        if ($deviceId) {
+            return 'device-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $deviceId);
+        }
+
+        return \Illuminate\Support\Facades\Auth::check() ? 'user-' . \Illuminate\Support\Facades\Auth::id() : null;
     }
 }

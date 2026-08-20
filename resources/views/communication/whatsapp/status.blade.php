@@ -16,10 +16,15 @@
     <div class="space-y-6">
         <div class="overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm sm:rounded-2xl ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06] border-t-4 border-emerald-500">
             <div class="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
-                <div>
-                    <h3 class="text-lg font-semibold leading-6 text-slate-900 dark:text-white">Informasi Koneksi</h3>
-                    <p class="mt-1 text-xs text-slate-500">Status penyedia pesan aktif: <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ strtoupper($status['active_provider']) }}</span></p>
-                </div>
+                    <h3 class="text-lg font-semibold leading-6 text-slate-900 dark:text-white">Informasi Koneksi Perangkat</h3>
+                    <p class="mt-1 text-xs text-slate-500 flex flex-wrap items-center gap-1.5">
+                        <span>Penyedia: <strong class="text-emerald-600 dark:text-emerald-400">{{ strtoupper($status['active_provider']) }}</strong></span>
+                        <span>•</span>
+                        <span>Sesi Komputer: <strong class="font-mono bg-slate-100 dark:bg-slate-700/80 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-200">{{ $deviceId ?? 'Perangkat Ini' }}</strong></span>
+                    </p>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
+                        ℹ️ <em>Koneksi WhatsApp ini terikat pada komputer/perangkat ini. Seluruh perawat/staf yang login di komputer ini akan otomatis terhubung ke nomor yang sama tanpa perlu scan ulang.</em>
+                    </p>
                 <div id="status-badge">
                     @if($status['connected'])
                         <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20">
@@ -141,7 +146,7 @@
 @if($status['active_provider'] === 'selfhosted')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const clientId = 'user-{{ Auth::id() }}';
+        const clientId = '{{ $clientId ?? ("device-" . ($deviceId ?? "default")) }}';
         // Menggunakan reverse proxy Nginx agar tidak perlu membuka port 3000 ke publik
         let GATEWAY_URL = window.location.origin + '/whatsapp-api';
         
