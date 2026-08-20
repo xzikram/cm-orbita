@@ -176,12 +176,19 @@ class RoleController extends Controller
                 'examinations.edit' => 'Edit Pemeriksaan',
                 'examinations.delete' => 'Hapus Pemeriksaan',
             ],
-            'Follow Up' => [
-                'follow-up.view' => 'Lihat Follow-Up',
-                'follow-up.create' => 'Tambah Follow-Up',
-                'follow-up.edit' => 'Edit Follow-Up',
-                'follow-up.delete' => 'Hapus Follow-Up',
-                'follow-up.record-visit' => 'Catat Kunjungan',
+            'Follow Up Rawat Jalan' => [
+                'follow-up.view' => 'Lihat Follow-Up RJ',
+                'follow-up.create' => 'Tambah Follow-Up RJ',
+                'follow-up.edit' => 'Edit Follow-Up RJ',
+                'follow-up.delete' => 'Hapus Follow-Up RJ',
+                'follow-up.record-visit' => 'Catat Kunjungan RJ',
+            ],
+            'Follow Up Rawat Inap' => [
+                'inpatient-follow-up.view' => 'Lihat Follow-Up Ranap',
+                'inpatient-follow-up.create' => 'Tambah Manual Pasien Ranap',
+                'inpatient-follow-up.send' => 'Kirim WA Follow-Up Ranap',
+                'inpatient-follow-up.record' => 'Catat Respon Klinis Ranap',
+                'inpatient-follow-up.delete' => 'Hapus Data Follow-Up Ranap',
             ],
             'Reminders' => [
                 'reminders.view' => 'Lihat Reminder',

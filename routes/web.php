@@ -146,7 +146,7 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('permission:patients.view');
 
         // Inpatient Follow-Up (Rawat Inap)
-        Route::prefix('inpatient')->name('inpatient.')->group(function () {
+        Route::prefix('inpatient')->name('inpatient.')->middleware('permission:inpatient-follow-up.view|follow-up.view')->group(function () {
             Route::get('/', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'index'])->name('index');
             Route::get('/create', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'create'])->name('create');
             Route::post('/', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'store'])->name('store');

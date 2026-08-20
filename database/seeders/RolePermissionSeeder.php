@@ -33,9 +33,12 @@ class RolePermissionSeeder extends Seeder
             // Examinations
             'examinations.view', 'examinations.create', 'examinations.edit', 'examinations.delete',
 
-            // Follow-Up
+            // Follow-Up Rawat Jalan
             'follow-up.view', 'follow-up.create', 'follow-up.edit', 'follow-up.delete',
             'follow-up.record-visit',
+
+            // Follow-Up Rawat Inap (Ranap)
+            'inpatient-follow-up.view', 'inpatient-follow-up.create', 'inpatient-follow-up.send', 'inpatient-follow-up.record', 'inpatient-follow-up.delete',
 
             // Reminders
             'reminders.view', 'reminders.send', 'reminders.manage',
@@ -66,6 +69,7 @@ class RolePermissionSeeder extends Seeder
         $medAss = Role::findOrCreate('med-ass', 'web');
         $ro = Role::findOrCreate('ro', 'web');
         $petugasFollowUp = Role::findOrCreate('petugas-follow-up', 'web');
+        $perawatRanap = Role::findOrCreate('perawat-rawat-inap', 'web');
 
         // ── Assign Permissions ──
 
@@ -129,7 +133,18 @@ class RolePermissionSeeder extends Seeder
             'patients.view',
             'examinations.view',
             'follow-up.view', 'follow-up.create', 'follow-up.edit', 'follow-up.record-visit',
+            'inpatient-follow-up.view', 'inpatient-follow-up.create', 'inpatient-follow-up.send', 'inpatient-follow-up.record', 'inpatient-follow-up.delete',
             'reminders.view', 'reminders.send',
+        ]);
+
+        // Perawat Rawat Inap (Hanya Dashboard dan Follow-Up Rawat Inap)
+        $perawatRanap->syncPermissions([
+            'dashboard.view',
+            'inpatient-follow-up.view',
+            'inpatient-follow-up.create',
+            'inpatient-follow-up.send',
+            'inpatient-follow-up.record',
+            'inpatient-follow-up.delete',
         ]);
     }
 }
