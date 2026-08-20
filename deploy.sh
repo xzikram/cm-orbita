@@ -72,10 +72,8 @@ sudo supervisorctl restart laravel-worker:*
 # 8. Perbaiki perizinan berkas (Permission) agar tidak terjadi error log
 echo "👉 Memperbaiki izin berkas (Permissions) untuk Nginx..."
 sudo chown -R www-data:www-data /var/www/clinical-system
-sudo find /var/www/clinical-system -type f -exec chmod 644 {} \;
-sudo find /var/www/clinical-system -type d -exec chmod 755 {} \;
-sudo chmod -R 775 /var/www/clinical-system/storage
-sudo chmod -R 775 /var/www/clinical-system/bootstrap/cache
+sudo chmod -R 755 /var/www/clinical-system
+sudo chmod -R 775 /var/www/clinical-system/storage /var/www/clinical-system/bootstrap/cache
 
 echo "==============================================="
 echo "  DEPLOYMENT SELESAI DENGAN SUKSES!            "
