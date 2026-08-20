@@ -2,19 +2,25 @@
     $dueCount = 0;
     $dueSchedules = collect();
     if (Auth::check() && Auth::user()->clinic_id) {
-        $dueSchedules = \App\Models\FollowUpSchedule::with('patient')
-            ->where('clinic_id', Auth::user()->clinic_id)
-            ->where('status', 'pending')
-            ->where('reminder_sent', false)
-            ->where('scheduled_date', '<=', now()->toDateString())
-            ->orderBy('scheduled_date', 'asc')
-            ->take(5)
-            ->get();
-        $dueCount = \App\Models\FollowUpSchedule::where('clinic_id', Auth::user()->clinic_id)
-            ->where('status', 'pending')
-            ->where('reminder_sent', false)
-            ->where('scheduled_date', '<=', now()->toDateString())
-            ->count();
+        $clinicId = Auth::user()->clinic_id;
+        $cachedData = \Illuminate\Support\Facades\Cache::remember('navbar_due_schedules_' . $clinicId, 30, function () use ($clinicId) {
+            $schedules = \App\Models\FollowUpSchedule::with('patient')
+                ->where('clinic_id', $clinicId)
+                ->where('status', 'pending')
+                ->where('reminder_sent', false)
+                ->where('scheduled_date', '<=', now()->toDateString())
+                ->orderBy('scheduled_date', 'asc')
+                ->take(5)
+                ->get();
+            $count = \App\Models\FollowUpSchedule::where('clinic_id', $clinicId)
+                ->where('status', 'pending')
+                ->where('reminder_sent', false)
+                ->where('scheduled_date', '<=', now()->toDateString())
+                ->count();
+            return ['schedules' => $schedules, 'count' => $count];
+        });
+        $dueSchedules = $cachedData['schedules'] ?? collect();
+        $dueCount = $cachedData['count'] ?? 0;
     }
 @endphp
 <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl px-4 shadow-sm shadow-slate-900/[0.03] ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04] sm:gap-x-6 sm:px-6 lg:px-8">

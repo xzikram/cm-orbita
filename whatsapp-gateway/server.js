@@ -217,8 +217,18 @@ function loadExistingSessions() {
         for (const file of files) {
             if (file.startsWith('session-')) {
                 const clientId = file.substring('session-'.length);
+                
+                // Bersihkan sesi lama 'user-*' yang usang agar tidak memakan RAM server
+                if (clientId.startsWith('user-')) {
+                    console.log(`[Manager] Membersihkan folder sesi usang: ${file}`);
+                    try {
+                        fs.rmSync(path.join(authDir, file), { recursive: true, force: true });
+                    } catch (e) {}
+                    continue;
+                }
+
                 if (clientId) {
-                    console.log(`[Manager] Menemukan sesi tersimpan untuk: ${clientId}. Memulai koneksi...`);
+                    console.log(`[Manager] Menemukan sesi perangkat: ${clientId}. Memulai koneksi...`);
                     getOrCreateClient(clientId);
                 }
             }

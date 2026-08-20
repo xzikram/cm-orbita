@@ -124,7 +124,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
                 $params['clientId'] = $clientId;
             }
 
-            $response = Http::timeout(5)->get($endpoint, $params);
+            $response = Http::timeout(1.5)->get($endpoint, $params);
  
             return $response->successful() && $response->json('ready') === true;
         } catch (\Exception) {
