@@ -144,6 +144,18 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('campaigns/{campaign}/toggle-active', [\App\Modules\FollowUp\Controllers\CampaignController::class, 'toggleActive'])
             ->name('campaigns.toggle-active')
             ->middleware('permission:patients.view');
+
+        // Inpatient Follow-Up (Rawat Inap)
+        Route::prefix('inpatient')->name('inpatient.')->group(function () {
+            Route::get('/', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'create'])->name('create');
+            Route::post('/', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'store'])->name('store');
+            Route::post('/sync-simrs', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'syncFromSimrs'])->name('sync-simrs');
+            Route::post('/{followUp}/send-whatsapp', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'sendWhatsApp'])->name('send-whatsapp');
+            Route::get('/{followUp}/record-response', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'recordResponseView'])->name('record-response');
+            Route::post('/{followUp}/record-response', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'storeResponse'])->name('store-response');
+            Route::delete('/{followUp}', [\App\Modules\FollowUp\Controllers\InpatientFollowUpController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // ── Reminders ──

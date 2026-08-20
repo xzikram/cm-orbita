@@ -91,6 +91,19 @@
                         </a>
                     </li>
 
+                    @php $active = request()->routeIs('follow-up.inpatient.*'); @endphp
+                    <li>
+                        <a href="{{ route('follow-up.inpatient.index') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
+                            @if($active)
+                            <span class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-gradient-to-b from-primary-500 to-primary-600 shadow-sm shadow-primary-500/30"></span>
+                            @endif
+                            <svg class="h-5 w-5 shrink-0 {{ $active ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300' }} transition-colors" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.25V5.625c0-.621-.504-1.125-1.125-1.125h-4.5c-.621 0-1.125.504-1.125 1.125v1.875M3 14.25V7.5a2.25 2.25 0 012.25-2.25h1.5A2.25 2.25 0 019 7.5v6.75m-6 0h18" />
+                            </svg>
+                            Pasien Rawat Inap
+                        </a>
+                    </li>
+
                     @php $active = request()->routeIs('follow-up.events.*'); @endphp
                     <li>
                         <a href="{{ route('follow-up.events.index') }}" class="group relative flex items-center gap-x-3 rounded-xl px-3 py-2.5 text-[13px] leading-6 font-semibold transition-all duration-200 {{ $active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm shadow-primary-500/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
