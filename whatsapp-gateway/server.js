@@ -315,7 +315,12 @@ app.post('/send-message', async (req, res) => {
     
     let clientData = clientId ? clients.get(clientId) : null;
     
-    // Fallback: If no clientId or specified client is not ready, use the first ready client
+    // Strict Device Check: If clientId is specified, it must be ready on its own
+    if (clientId && (!clientData || !clientData.isReady)) {
+        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.` });
+    }
+
+    // If no clientId provided at all (e.g. CLI/cron), fallback to first ready client
     if (!clientData || !clientData.isReady) {
         for (const [id, cData] of clients.entries()) {
             if (cData.isReady) {
@@ -359,7 +364,12 @@ app.post('/send-document', async (req, res) => {
 
     let clientData = clientId ? clients.get(clientId) : null;
 
-    // Fallback: If no clientId or specified client is not ready, use the first ready client
+    // Strict Device Check: If clientId is specified, it must be ready on its own
+    if (clientId && (!clientData || !clientData.isReady)) {
+        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.` });
+    }
+
+    // If no clientId provided at all (e.g. CLI/cron), fallback to first ready client
     if (!clientData || !clientData.isReady) {
         for (const [id, cData] of clients.entries()) {
             if (cData.isReady) {

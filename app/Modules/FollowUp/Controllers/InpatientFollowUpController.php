@@ -229,6 +229,11 @@ class InpatientFollowUpController extends Controller
             return back()->with('error', 'Nomor WhatsApp pasien tidak tersedia.');
         }
 
+        // Validasi koneksi WhatsApp pada perangkat ini terlebih dahulu
+        if ($this->whatsAppProvider->getProviderName() === 'selfhosted' && !$this->whatsAppProvider->checkStatus()) {
+            return back()->with('error', 'WhatsApp pada komputer/perangkat ini belum terhubung. Silakan buka menu Komunikasi > WhatsApp Gateway untuk menghubungkan WhatsApp terlebih dahulu.');
+        }
+
         // Time greeting (Pagi / Siang / Sore / Malam)
         $hour = (int)now()->timezone(config('app.timezone', 'Asia/Makassar'))->format('H');
         $greetingTime = match (true) {
