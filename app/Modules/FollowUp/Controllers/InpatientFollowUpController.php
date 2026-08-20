@@ -145,8 +145,10 @@ class InpatientFollowUpController extends Controller
         $clinicId = Auth::user()->clinic_id;
         $limit = (int)$request->get('limit', 100);
 
+        $startDate = '2026-08-01';
+
         try {
-            $simrsPatients = $this->simrsBridgeService->getDischargedInpatients($limit);
+            $simrsPatients = $this->simrsBridgeService->getDischargedInpatients($limit, $startDate);
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal terhubung ke SIM RS: ' . $e->getMessage());
         }

@@ -21,8 +21,10 @@ class SyncInpatientFromSimrs extends Command
         $this->info('Memulai sinkronisasi harian pasien pulang rawat inap dari SIM RS...');
         $limit = (int)$this->option('limit');
 
+        $startDate = '2026-08-01';
+
         try {
-            $simrsPatients = $simrsBridgeService->getDischargedInpatients($limit);
+            $simrsPatients = $simrsBridgeService->getDischargedInpatients($limit, $startDate);
         } catch (\Exception $e) {
             $this->error('Gagal terhubung ke SIM RS: ' . $e->getMessage());
             Log::error('Inpatient SIMRS Sync Error: ' . $e->getMessage());
