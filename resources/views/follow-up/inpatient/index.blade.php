@@ -15,29 +15,18 @@
                 </div>
                 <div>
                     <h1 class="page-header-title">Follow-Up Pasien Rawat Inap</h1>
-                    <p class="page-header-desc">Penjangkauan & evaluasi klinis kondisi pasien pada <strong>H+3 pasca kepulangan</strong> via WhatsApp.</p>
+                    <p class="page-header-desc">Penjangkauan & evaluasi klinis kondisi pasien pada <strong>H+3 pasca kepulangan</strong> via WhatsApp (Otomatis disinkronkan tiap jam 07:00 pagi).</p>
                 </div>
             </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
-            <!-- Tombol Tarik dari SIM RS -->
-            <form action="{{ route('follow-up.inpatient.sync-simrs') }}" method="POST" class="inline" onsubmit="return confirm('Tarik data kepulangan pasien rawat inap terbaru dari SIM RS?');">
-                @csrf
-                <button type="submit" class="btn-secondary text-xs py-2 px-4 gap-x-1.5">
-                    <svg class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
-                    Tarik dari SIM RS
-                </button>
-            </form>
-
             <!-- Tombol Tambah Manual -->
             <a href="{{ route('follow-up.inpatient.create') }}" class="btn-primary text-xs py-2 px-4 gap-x-1.5">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                Tambah Manual
+                Tambah Manual Pasien
             </a>
         </div>
     </div>
@@ -261,10 +250,19 @@
                     <td class="text-right">
                         <div class="flex items-center justify-end gap-x-2">
                             <!-- Tombol Kirim WhatsApp -->
-                            <button type="button" @click="openSendModal({{ json_encode($item) }})" class="inline-flex items-center gap-x-1.5 rounded-xl {{ $item->status === 'sent' || $item->status === 'completed' ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20' }} px-3 py-1.5 text-xs font-semibold transition-all" title="Kirim Follow-Up WhatsApp">
-                                <svg class="h-3.5 w-3.5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                                {{ $item->status === 'sent' || $item->status === 'completed' ? 'Kirim Ulang' : 'Kirim WA' }}
+                            @if($item->status === 'sent' || $item->status === 'completed')
+                            <button type="button" @click="openSendModal({{ json_encode($item) }})" class="inline-flex items-center gap-x-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-400 px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ring-slate-200 dark:ring-slate-700 transition-all" title="Kirim Ulang Pesan Follow-Up">
+                                <svg class="h-3.5 w-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                Kirim Ulang
                             </button>
+                            @else
+                            <button type="button" @click="openSendModal({{ json_encode($item) }})" class="inline-flex items-center gap-x-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/25 px-3.5 py-1.5 text-xs font-semibold transition-all" title="Kirim Follow-Up WhatsApp">
+                                <svg class="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                Kirim WA
+                            </button>
+                            @endif
 
                             <!-- Tombol Catat Respon -->
                             <a href="{{ route('follow-up.inpatient.record-response', $item) }}" class="table-action-primary" title="Catat 5 Poin Evaluasi Klinis">
@@ -295,7 +293,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.25V5.625c0-.621-.504-1.125-1.125-1.125h-4.5c-.621 0-1.125.504-1.125 1.125v1.875M3 14.25V7.5a2.25 2.25 0 0 1 2.25-2.25h1.5A2.25 2.25 0 0 1 9 7.5v6.75m-6 0h18" />
                             </svg>
                             <h3 class="empty-state-title">Tidak ada data pasien rawat inap yang ditemukan</h3>
-                            <p class="empty-state-desc">Gunakan tombol <strong>"Tarik dari SIM RS"</strong> untuk menarik data otomatis atau <strong>"Tambah Manual"</strong> untuk simulasi.</p>
+                            <p class="empty-state-desc">Data disinkronkan otomatis setiap hari pukul <strong>07:00 pagi</strong> atau Anda dapat menggunakan tombol <strong>"Tambah Manual"</strong> untuk simulasi.</p>
                         </div>
                     </td>
                 </tr>
@@ -310,24 +308,50 @@
     </div>
     @endif
 
-    <!-- Modal Konfirmasi Kirim WhatsApp -->
+    <!-- Modal Konfirmasi Kirim WhatsApp (Dengan 3 Lapis Proteksi Kirim Ulang) -->
     <div x-show="showSendModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
         <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
             <div x-show="showSendModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showSendModal = false"></div>
 
             <div x-show="showSendModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-200/80 dark:border-slate-700/80">
-                <form :action="'/follow-up/inpatient/' + activeItem.id + '/send-whatsapp'" method="POST">
+                <form :action="'/follow-up/inpatient/' + activeItem.id + '/send-whatsapp'" method="POST" @submit="return handleFormSubmit($event)">
                     @csrf
                     <div class="p-6">
                         <div class="flex items-center gap-x-3 mb-5">
-                            <div class="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20 flex items-center justify-center shrink-0">
+                            <div class="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ring-1" :class="isResend() ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 ring-amber-500/30' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20'">
                                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                             </div>
                             <div>
-                                <h3 class="text-base font-bold text-slate-900 dark:text-white">Kirim Pesan Follow-Up WhatsApp</h3>
+                                <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="isResend() ? 'Konfirmasi Kirim Ulang WhatsApp' : 'Kirim Pesan Follow-Up WhatsApp'"></h3>
                                 <p class="text-xs text-slate-400">Verifikasi data penerima dan pengirim sebelum mengirim.</p>
                             </div>
                         </div>
+
+                        <!-- Lapis Proteksi 1: Banner Peringatan Bahaya (Danger Alert) jika Pesan Sudah Pernah Dikirim -->
+                        <template x-if="isResend()">
+                            <div class="rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 ring-1 ring-amber-500/40 p-4 mb-4">
+                                <div class="flex items-start gap-3">
+                                    <div class="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 shrink-0">
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200">PERINGATAN: Pesan Sudah Pernah Terkirim!</h4>
+                                        <p class="text-[11px] text-amber-800 dark:text-amber-300/90 mt-1 leading-relaxed">
+                                            Pesan sebelumnya dikirim pada <strong x-text="formatDate(activeItem.sent_at)"></strong> oleh perawat <strong x-text="activeItem.nurse_name || '-'"></strong>.<br>
+                                            <span class="text-rose-600 dark:text-rose-400 font-bold">Mengirim pesan berulang dapat mengganggu dan membingungkan pasien.</span>
+                                        </p>
+
+                                        <!-- Lapis Proteksi 2: Checkbox Wajib Konfirmasi Sadar -->
+                                        <label class="flex items-start gap-2.5 mt-3 pt-2.5 border-t border-amber-200/80 dark:border-amber-900/60 cursor-pointer">
+                                            <input type="checkbox" x-model="confirmResend" class="mt-0.5 rounded text-rose-600 focus:ring-rose-600">
+                                            <span class="text-xs font-bold text-slate-900 dark:text-white">Saya memahami risiko dan mengonfirmasi secara sadar untuk mengirim ulang pesan ini ke pasien.</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
 
                         <div class="space-y-4 text-xs">
                             <div>
@@ -376,9 +400,10 @@ RS Mata JEC Orbita Makassar"</div>
                         <button type="button" @click="showSendModal = false" class="btn-secondary text-xs py-2 px-4">
                             Batal
                         </button>
-                        <button type="submit" class="btn-primary text-xs py-2 px-5 gap-x-1.5">
+                        <!-- Lapis Proteksi 3: Tombol Terkunci Disabled jika belum dicentang -->
+                        <button type="submit" :disabled="isResend() && !confirmResend" class="text-xs py-2 px-5 gap-x-1.5 inline-flex items-center justify-center font-semibold rounded-xl transition-all" :class="(isResend() && !confirmResend) ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed' : (isResend() ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/25' : 'btn-primary')">
                             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            Kirim Sekarang
+                            <span x-text="isResend() ? 'Kirim Ulang Sekarang' : 'Kirim Sekarang'"></span>
                         </button>
                     </div>
                 </form>
@@ -392,10 +417,35 @@ function inpatientFollowUp() {
     return {
         showSendModal: false,
         activeItem: {},
+        confirmResend: false,
         nurseName: '{{ Auth::user()->name ?: "Perawat Rawat Inap" }}',
         openSendModal(item) {
             this.activeItem = item;
+            this.confirmResend = false;
             this.showSendModal = true;
+        },
+        isResend() {
+            return this.activeItem && (this.activeItem.status === 'sent' || this.activeItem.status === 'completed');
+        },
+        formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d)) return dateStr;
+            return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WITA';
+        },
+        handleFormSubmit(e) {
+            if (this.isResend()) {
+                if (!this.confirmResend) {
+                    alert('Mohon centang kotak persetujuan konfirmasi kirim ulang terlebih dahulu.');
+                    e.preventDefault();
+                    return false;
+                }
+                if (!confirm('Apakah Anda benar-benar yakin ingin mengirim ulang pesan WhatsApp ke pasien ' + this.activeItem.patient_name + '?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            return true;
         }
     };
 }
