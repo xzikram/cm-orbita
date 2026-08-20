@@ -20,6 +20,28 @@ app.use((req, res, next) => {
 // Map to store WhatsApp clients keyed by clientId
 const clients = new Map();
 
+// Helper to execute with retry if execution context was destroyed momentarily
+async function executeWithRetry(fn, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            return await fn();
+        } catch (err) {
+            const isContextError = err.message && (
+                err.message.includes('Execution context was destroyed') ||
+                err.message.includes('Session closed') ||
+                err.message.includes('Target closed') ||
+                err.message.includes('Evaluation failed')
+            );
+            if (isContextError && attempt < retries) {
+                console.warn(`[Retry] Terjadi perpindahan konteks browser (${err.message}). Menunggu 1 detik & mengulang otomatis (${attempt}/${retries})...`);
+                await new Promise(r => setTimeout(r, 1200));
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
 // Helper to execute WhatsApp actions sequentially per client with a settling delay
 function queueClientAction(clientData, fn) {
     if (!clientData.actionQueue) {
@@ -27,7 +49,7 @@ function queueClientAction(clientData, fn) {
     }
 
     const nextAction = clientData.actionQueue.then(async () => {
-        const res = await fn();
+        const res = await executeWithRetry(fn, 3);
         await new Promise(resolve => setTimeout(resolve, 800));
         return res;
     }).catch(async (err) => {
