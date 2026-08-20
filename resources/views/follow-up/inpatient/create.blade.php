@@ -121,7 +121,16 @@
                         <label for="doctor_dpjp" class="form-label">
                             Dokter DPJP
                         </label>
-                        <input type="text" name="doctor_dpjp" id="doctor_dpjp" value="{{ old('doctor_dpjp') }}" placeholder="Contoh: dr. Andi Suryanita Tajuddin, Sp.M" class="input-field">
+                        <select name="doctor_dpjp" id="doctor_dpjp" class="input-field">
+                            <option value="">-- Pilih Dokter DPJP dari Master Data --</option>
+                            @if(isset($doctors) && count($doctors) > 0)
+                                @foreach($doctors as $doc)
+                                    <option value="{{ $doc->name }}" {{ old('doctor_dpjp') === $doc->name ? 'selected' : '' }}>
+                                        {{ $doc->name }}{{ $doc->specialization ? ' (' . $doc->specialization . ')' : '' }}
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
                     </div>
 
                     <div>

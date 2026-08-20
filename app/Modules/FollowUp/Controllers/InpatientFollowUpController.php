@@ -82,7 +82,9 @@ class InpatientFollowUpController extends Controller
 
     public function create()
     {
-        return view('follow-up.inpatient.create');
+        $clinicId = Auth::user()->clinic_id;
+        $doctors = \App\Models\Doctor::where('clinic_id', $clinicId)->active()->orderBy('name')->get();
+        return view('follow-up.inpatient.create', compact('doctors'));
     }
 
     public function store(Request $request)
