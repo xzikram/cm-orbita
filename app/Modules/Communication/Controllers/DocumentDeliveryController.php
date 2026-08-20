@@ -315,7 +315,7 @@ class DocumentDeliveryController extends Controller
         return back()->with('success', 'Status pengiriman berhasil diperbarui menjadi Terkirim.');
     }
 
-    public function whatsappStatus()
+    public function whatsappStatus(Request $request)
     {
         $config = config('whatsapp.providers.selfhosted');
         $url = $config['url'] ?? 'http://localhost:3000';
