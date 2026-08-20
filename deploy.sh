@@ -13,7 +13,8 @@ cd /var/www/clinical-system || exit
 
 # 2. Ambil perubahan terbaru dari Git
 echo "👉 Mengunduh pembaruan dari Git..."
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 # 3. Pasang dependency PHP baru (jika ada)
 echo "👉 Memperbarui dependensi Composer (PHP)..."
