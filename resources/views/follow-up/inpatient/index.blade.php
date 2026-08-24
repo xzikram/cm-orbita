@@ -21,6 +21,17 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Tombol Sinkronkan SIM RS -->
+            <form action="{{ route('follow-up.inpatient.sync-simrs') }}" method="POST" class="inline">
+                @csrf
+                <button type="submit" class="btn-secondary text-xs py-2 px-4 gap-x-1.5 inline-flex items-center shadow-sm" title="Tarik & sinkronkan data pasien rawat inap yang baru pulang dari SIM RS">
+                    <svg class="h-4 w-4 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Sinkronkan SIM RS
+                </button>
+            </form>
+
             <!-- Tombol Tambah Manual -->
             <a href="{{ route('follow-up.inpatient.create') }}" class="btn-primary text-xs py-2 px-4 gap-x-1.5">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -293,7 +304,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.25V5.625c0-.621-.504-1.125-1.125-1.125h-4.5c-.621 0-1.125.504-1.125 1.125v1.875M3 14.25V7.5a2.25 2.25 0 0 1 2.25-2.25h1.5A2.25 2.25 0 0 1 9 7.5v6.75m-6 0h18" />
                             </svg>
                             <h3 class="empty-state-title">Tidak ada data pasien rawat inap yang ditemukan</h3>
-                            <p class="empty-state-desc">Data disinkronkan otomatis setiap hari pukul <strong>07:00 pagi</strong> atau Anda dapat menggunakan tombol <strong>"Tambah Manual"</strong> untuk simulasi.</p>
+                            <p class="empty-state-desc">Data disinkronkan otomatis setiap hari pukul <strong>07:00 pagi</strong>. Anda juga dapat menggunakan tombol <strong>"Sinkronkan SIM RS"</strong> di atas atau <strong>"Tambah Manual Pasien"</strong>.</p>
                         </div>
                     </td>
                 </tr>

@@ -147,7 +147,7 @@ class InpatientFollowUpController extends Controller
         $clinicId = Auth::user()->clinic_id;
         $limit = (int)$request->get('limit', 100);
 
-        $startDate = '2026-08-01';
+        $startDate = Carbon::now()->subDays(60)->format('Y-m-d');
 
         try {
             $simrsPatients = $this->simrsBridgeService->getDischargedInpatients($limit, $startDate);
@@ -319,12 +319,12 @@ class InpatientFollowUpController extends Controller
             || $validated['response_vision_progress'] === 'menurun';
 
         $followUp->update([
-            'response_complaints' => $validated['response_complaints'],
+            'response_complaints' => $validated['response_complaints'] ?? null,
             'response_medication_compliance' => $validated['response_medication_compliance'],
-            'response_side_effects' => $validated['response_side_effects'],
+            'response_side_effects' => $validated['response_side_effects'] ?? null,
             'response_wound_condition' => $validated['response_wound_condition'],
             'response_vision_progress' => $validated['response_vision_progress'],
-            'response_notes' => $validated['response_notes'],
+            'response_notes' => $validated['response_notes'] ?? null,
             'needs_doctor_review' => $needsReview,
             'status' => 'completed',
             'responded_at' => now(),
