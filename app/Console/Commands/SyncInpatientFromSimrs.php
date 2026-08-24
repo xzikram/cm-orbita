@@ -21,7 +21,7 @@ class SyncInpatientFromSimrs extends Command
         $this->info('Memulai sinkronisasi harian pasien pulang rawat inap dari SIM RS...');
         $limit = (int)$this->option('limit');
 
-        $startDate = Carbon::now()->subDays(60)->format('Y-m-d');
+        $startDate = '2026-08-20';
 
         try {
             $simrsPatients = $simrsBridgeService->getDischargedInpatients($limit, $startDate);

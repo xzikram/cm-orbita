@@ -147,7 +147,7 @@ class InpatientFollowUpController extends Controller
         $clinicId = Auth::user()->clinic_id;
         $limit = (int)$request->get('limit', 100);
 
-        $startDate = Carbon::now()->subDays(60)->format('Y-m-d');
+        $startDate = '2026-08-20';
 
         try {
             $simrsPatients = $this->simrsBridgeService->getDischargedInpatients($limit, $startDate);
