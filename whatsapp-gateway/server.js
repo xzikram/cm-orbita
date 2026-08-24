@@ -341,6 +341,42 @@ app.post('/reset-session', async (req, res) => {
     res.json({ success: true, message: `Sesi ${clientId} berhasil direset.` });
 });
 
+// Helper to resolve exact target JID and populate contact/LID store in WA Web
+async function resolveTargetJid(clientData, rawPhone) {
+    let cleanPhone = (rawPhone || '').replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) {
+        cleanPhone = '62' + cleanPhone.slice(1);
+    }
+    if (!cleanPhone) {
+        return { valid: false, error: 'Nomor telepon tidak boleh kosong atau format tidak valid.' };
+    }
+
+    try {
+        // Step 1: Check getNumberId to verify registration and retrieve exact JID/LID
+        const numberId = await queueClientAction(clientData, () => 
+            clientData.client.getNumberId(cleanPhone)
+        );
+
+        if (numberId && numberId._serialized) {
+            const targetJid = numberId._serialized;
+            // Step 2: Touch contact store to ensure LID mapping is populated in Puppeteer memory
+            try {
+                await queueClientAction(clientData, () => 
+                    clientData.client.getContactById(targetJid)
+                );
+            } catch (e) {
+                // Ignore getContactById minor fail if getNumberId succeeded
+            }
+            return { valid: true, jid: targetJid, cleanPhone };
+        }
+
+        return { valid: false, error: `Nomor telepon (${rawPhone}) tidak terdaftar di WhatsApp.` };
+    } catch (err) {
+        console.warn(`[JID Resolver] Gagal cek getNumberId untuk ${cleanPhone} (${err.message}). Fallback ke JID standar...`);
+        return { valid: true, jid: `${cleanPhone}@c.us`, cleanPhone };
+    }
+}
+
 // Endpoint: Send text message
 app.post('/send-message', async (req, res) => {
     let { clientId, phone, message } = req.body;
@@ -371,13 +407,13 @@ app.post('/send-message', async (req, res) => {
         return res.status(400).json({ error: 'Parameter phone dan message wajib diisi.' });
     }
 
+    let formattedPhone = `${phone}@c.us`;
     try {
-        // Clean phone number format
-        let cleanPhone = phone.replace(/\D/g, '');
-        if (cleanPhone.startsWith('0')) {
-            cleanPhone = '62' + cleanPhone.slice(1);
+        const jidResult = await resolveTargetJid(clientData, phone);
+        if (!jidResult.valid) {
+            return res.status(400).json({ error: jidResult.error });
         }
-        const formattedPhone = `${cleanPhone}@c.us`;
+        formattedPhone = jidResult.jid;
 
         const response = await queueClientAction(clientData, () => 
             clientData.client.sendMessage(formattedPhone, message)
@@ -385,8 +421,12 @@ app.post('/send-message', async (req, res) => {
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_msg_${Date.now()}`;
         res.json({ success: true, messageId });
     } catch (error) {
-        console.error(`[${clientId}] Gagal mengirim pesan:`, error);
-        res.status(500).json({ error: error.message });
+        console.error(`[${clientId}] Gagal mengirim pesan ke ${formattedPhone}:`, error);
+        let errorMsg = error.message || 'Gagal mengirim pesan via WhatsApp Gateway.';
+        if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
+            errorMsg = `Gagal mengirim ke ${formattedPhone}: Kontak WhatsApp tidak dapat terverifikasi (LID tidak ditemukan). Pastikan nomor HP terdaftar di WhatsApp.`;
+        }
+        res.status(500).json({ error: errorMsg });
     }
 });
 
@@ -420,13 +460,13 @@ app.post('/send-document', async (req, res) => {
         return res.status(400).json({ error: 'Parameter phone, fileUrl, dan filename wajib diisi.' });
     }
 
+    let formattedPhone = `${phone}@c.us`;
     try {
-        // Clean phone number format
-        let cleanPhone = phone.replace(/\D/g, '');
-        if (cleanPhone.startsWith('0')) {
-            cleanPhone = '62' + cleanPhone.slice(1);
+        const jidResult = await resolveTargetJid(clientData, phone);
+        if (!jidResult.valid) {
+            return res.status(400).json({ error: jidResult.error });
         }
-        const formattedPhone = `${cleanPhone}@c.us`;
+        formattedPhone = jidResult.jid;
 
         console.log(`[${clientId}] Mengunduh file dari URL: ${fileUrl}`);
         
@@ -473,8 +513,12 @@ app.post('/send-document', async (req, res) => {
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_doc_${Date.now()}`;
         res.json({ success: true, messageId });
     } catch (error) {
-        console.error(`[${clientId}] Gagal mengirim dokumen:`, error);
-        res.status(500).json({ error: error.message });
+        console.error(`[${clientId}] Gagal mengirim dokumen ke ${formattedPhone}:`, error);
+        let errorMsg = error.message || 'Gagal mengirim dokumen via WhatsApp Gateway.';
+        if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
+            errorMsg = `Gagal mengirim ke ${formattedPhone}: Kontak WhatsApp tidak dapat terverifikasi (LID tidak ditemukan). Pastikan nomor HP terdaftar di WhatsApp.`;
+        }
+        res.status(500).json({ error: errorMsg });
     }
 });
 
