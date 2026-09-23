@@ -29,6 +29,10 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
         if (str_starts_with($clean, '0')) {
             $clean = '62' . substr($clean, 1);
         }
+        // Fix: nomor tanpa awalan 0/62 (misal 81234567890) → tambahkan 62
+        if (preg_match('/^8\d{8,12}$/', $clean)) {
+            $clean = '62' . $clean;
+        }
         return $clean;
     }
 

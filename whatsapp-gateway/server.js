@@ -95,6 +95,16 @@ async function evictLeastActiveClient(excludeClientId) {
     }
 }
 
+// Helper to find ANY ready client (for shared clinic session)
+function findAnyReadyClient() {
+    for (const [id, cd] of clients.entries()) {
+        if (cd.isReady && !cd.placeholder && !cd.reconnecting) {
+            return { clientId: id, clientData: cd };
+        }
+    }
+    return null;
+}
+
 // Helper to get or create client instance (with concurrency guard)
 function getOrCreateClient(clientId) {
     if (clients.has(clientId)) {
@@ -118,6 +128,66 @@ function getOrCreateClient(clientId) {
         evictLeastActiveClient(clientId);
     }
     return createNewClient(clientId);
+}
+
+// ensureClientReady: wake up placeholder or wait for initializing client, with shared fallback
+async function ensureClientReady(clientId, timeoutMs = 25000) {
+    // 1. If the exact clientId is already ready, use it
+    if (clients.has(clientId)) {
+        const cd = clients.get(clientId);
+        if (cd.isReady && !cd.placeholder && !cd.reconnecting) {
+            cd.lastActive = Date.now();
+            return { clientId, clientData: cd, shared: false };
+        }
+    }
+
+    // 2. Shared Clinic Fallback: if there's ANY other ready client, use it transparently
+    const readyFallback = findAnyReadyClient();
+    if (readyFallback) {
+        console.log(`[SharedSession] Client '${clientId}' belum siap, menggunakan sesi aktif '${readyFallback.clientId}' sebagai fallback.`);
+        readyFallback.clientData.lastActive = Date.now();
+        return { clientId: readyFallback.clientId, clientData: readyFallback.clientData, shared: true };
+    }
+
+    // 3. No ready client anywhere — try to wake up the requested clientId
+    if (clients.has(clientId) && clients.get(clientId).placeholder) {
+        console.log(`[ensureClientReady] Membangunkan placeholder '${clientId}'...`);
+        const cd = getOrCreateClient(clientId); // triggers lazy-init
+
+        // Wait for 'ready' event with timeout
+        const readyPromise = new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                reject(new Error(`Timeout ${timeoutMs}ms menunggu sesi '${clientId}' siap.`));
+            }, timeoutMs);
+
+            const checkInterval = setInterval(() => {
+                const current = clients.get(clientId);
+                if (current && current.isReady) {
+                    clearTimeout(timer);
+                    clearInterval(checkInterval);
+                    resolve(current);
+                }
+            }, 500);
+        });
+
+        try {
+            const readyClient = await readyPromise;
+            readyClient.lastActive = Date.now();
+            return { clientId, clientData: readyClient, shared: false };
+        } catch (err) {
+            console.warn(`[ensureClientReady] ${err.message}`);
+            // Last-ditch: maybe another client became ready while we were waiting
+            const lastChance = findAnyReadyClient();
+            if (lastChance) {
+                lastChance.clientData.lastActive = Date.now();
+                return { clientId: lastChance.clientId, clientData: lastChance.clientData, shared: true };
+            }
+            throw err;
+        }
+    }
+
+    // 4. No session folder exists at all — nothing to wake up
+    throw new Error(`Tidak ada sesi WhatsApp yang tersedia. Silakan scan QR Code terlebih dahulu.`);
 }
 
 // Function to create a fresh client instance and setup listeners
@@ -372,34 +442,58 @@ setInterval(() => {
     console.log(`[Monitor] Sesi aktif: ${activeCount}/${MAX_CONCURRENT_CLIENTS} | Placeholder: ${placeholderCount} | RAM Node.js: ${Math.round(memUsage.rss / 1024 / 1024)}MB`);
 }, 5 * 60 * 1000);
 
-// Endpoint: Check status of a client
+// Endpoint: Check status of a client (with shared session awareness)
 app.get('/status', (req, res) => {
     const clientId = req.query.clientId;
     if (!clientId) {
         // Fallback for background system tasks: check if there is at least one client connected/ready
-        let anyReady = false;
-        for (const [id, clientData] of clients.entries()) {
-            if (clientData.isReady) {
-                anyReady = true;
-                break;
-            }
-        }
-        return res.json({ ready: anyReady, qr: null });
+        const ready = findAnyReadyClient();
+        return res.json({ ready: !!ready, qr: null });
     }
 
-    // Status check: if placeholder, return not-ready without spawning Chromium
-    // Chromium only spawns when user explicitly opens the WhatsApp settings page (via /init endpoint)
-    if (clients.has(clientId) && clients.get(clientId).placeholder) {
-        return res.json({ 
-            ready: false, 
-            qr: null, 
-            placeholder: true,
-            message: 'Sesi tersimpan. Klik "Hubungkan" untuk memulai koneksi.'
+    // 1. Check if the exact clientId is ready
+    if (clients.has(clientId)) {
+        const cd = clients.get(clientId);
+        if (cd.isReady && !cd.placeholder) {
+            return res.json({ ready: true, qr: null, shared: false });
+        }
+        // If placeholder, check for shared fallback first
+        if (cd.placeholder) {
+            const sharedReady = findAnyReadyClient();
+            if (sharedReady) {
+                return res.json({
+                    ready: true,
+                    qr: null,
+                    shared: true,
+                    sharedClientId: sharedReady.clientId,
+                    message: 'WhatsApp Klinik terhubung melalui sesi bersama.'
+                });
+            }
+            return res.json({ 
+                ready: false, 
+                qr: null, 
+                placeholder: true,
+                message: 'Sesi tersimpan. Klik "Hubungkan" untuk memulai koneksi.'
+            });
+        }
+        // Initializing (not placeholder, not ready yet)
+        return res.json({ ready: false, qr: cd.latestQrDataUrl });
+    }
+
+    // 2. ClientId not in Map — check for shared fallback
+    const sharedReady = findAnyReadyClient();
+    if (sharedReady) {
+        return res.json({
+            ready: true,
+            qr: null,
+            shared: true,
+            sharedClientId: sharedReady.clientId,
+            message: 'WhatsApp Klinik terhubung melalui sesi bersama.'
         });
     }
 
-    const clientData = getOrCreateClient(clientId);
-    res.json({ ready: clientData.isReady, qr: clientData.latestQrDataUrl });
+    // 3. Nothing available at all
+    return res.json({ ready: false, qr: null, message: 'Belum ada sesi WhatsApp yang terhubung.' });
 });
 
 // Endpoint: Explicitly initialize/connect a specific client (triggers Chromium)
@@ -462,6 +556,10 @@ async function resolveTargetJid(clientData, rawPhone) {
     if (cleanPhone.startsWith('0')) {
         cleanPhone = '62' + cleanPhone.slice(1);
     }
+    // Fix: nomor tanpa awalan 0/62 (misal 81234567890) → tambahkan 62
+    if (/^8\d{8,12}$/.test(cleanPhone)) {
+        cleanPhone = '62' + cleanPhone;
+    }
     if (!cleanPhone || cleanPhone.length < 10) {
         return { valid: false, error: `Format nomor telepon tidak valid (${rawPhone}). Minimal 10 digit angka.`, code: 'INVALID_FORMAT' };
     }
@@ -523,34 +621,25 @@ async function resolveTargetJid(clientData, rawPhone) {
     }
 }
 
-// Endpoint: Send text message
+// Endpoint: Send text message (with ensureClientReady + shared session)
 app.post('/send-message', async (req, res) => {
     let { clientId, phone, message } = req.body;
     
-    let clientData = clientId ? clients.get(clientId) : null;
-    
-    // Strict Device Check: If clientId is specified, it must be ready on its own
-    if (clientId && (!clientData || !clientData.isReady)) {
-        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.`, code: 'GATEWAY_DISCONNECTED' });
-    }
-
-    // If no clientId provided at all (e.g. CLI/cron), fallback to first ready client
-    if (!clientData || !clientData.isReady) {
-        for (const [id, cData] of clients.entries()) {
-            if (cData.isReady) {
-                clientId = id;
-                clientData = cData;
-                break;
-            }
-        }
-    }
-
-    if (!clientData || !clientData.isReady) {
-        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.', code: 'GATEWAY_DISCONNECTED' });
-    }
-
     if (!phone || !message) {
         return res.status(400).json({ error: 'Parameter phone dan message wajib diisi.' });
+    }
+
+    let clientData, resolvedClientId, shared = false;
+    try {
+        const resolved = await ensureClientReady(clientId || '__system__');
+        clientData = resolved.clientData;
+        resolvedClientId = resolved.clientId;
+        shared = resolved.shared;
+    } catch (err) {
+        return res.status(503).json({ 
+            error: err.message || 'Tidak ada WhatsApp client yang siap / terhubung.', 
+            code: 'GATEWAY_DISCONNECTED' 
+        });
     }
 
     let formattedPhone = `${phone}@c.us`;
@@ -569,7 +658,7 @@ app.post('/send-message', async (req, res) => {
         } catch (firstSendErr) {
             const msg = firstSendErr?.message || '';
             if (msg.includes('No LID for user') || msg.includes('static.whatsapp.net')) {
-                console.warn(`[${clientId}] Terdeteksi kendala LID saat kirim pesan ke ${formattedPhone}. Mencoba refresh kontak dan kirim ulang...`);
+                console.warn(`[${resolvedClientId}] Terdeteksi kendala LID saat kirim pesan ke ${formattedPhone}. Mencoba refresh kontak dan kirim ulang...`);
                 try {
                     if (typeof clientData.client.getContactLidAndPhone === 'function') {
                         await queueClientAction(clientData, () => clientData.client.getContactLidAndPhone([formattedPhone]));
@@ -585,9 +674,9 @@ app.post('/send-message', async (req, res) => {
         }
 
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_msg_${Date.now()}`;
-        res.json({ success: true, messageId });
+        res.json({ success: true, messageId, shared });
     } catch (error) {
-        console.error(`[${clientId}] Gagal mengirim pesan ke ${formattedPhone}:`, error);
+        console.error(`[${resolvedClientId}] Gagal mengirim pesan ke ${formattedPhone}:`, error);
         let errorMsg = error.message || 'Gagal mengirim pesan via WhatsApp Gateway.';
         let errorCode = 'SEND_ERROR';
         if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
@@ -599,34 +688,25 @@ app.post('/send-message', async (req, res) => {
     }
 });
 
-// Endpoint: Send document file (PDF, etc.)
+// Endpoint: Send document file (PDF, etc.) — with ensureClientReady + shared session + __x_id sanitization
 app.post('/send-document', async (req, res) => {
     let { clientId, phone, fileUrl, filePath, filename, caption } = req.body;
 
-    let clientData = clientId ? clients.get(clientId) : null;
-
-    // Strict Device Check: If clientId is specified, it must be ready on its own
-    if (clientId && (!clientData || !clientData.isReady)) {
-        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.`, code: 'GATEWAY_DISCONNECTED' });
-    }
-
-    // If no clientId provided at all (e.g. CLI/cron), fallback to first ready client
-    if (!clientData || !clientData.isReady) {
-        for (const [id, cData] of clients.entries()) {
-            if (cData.isReady) {
-                clientId = id;
-                clientData = cData;
-                break;
-            }
-        }
-    }
-
-    if (!clientData || !clientData.isReady) {
-        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.', code: 'GATEWAY_DISCONNECTED' });
-    }
-
     if (!phone || (!fileUrl && !filePath) || !filename) {
         return res.status(400).json({ error: 'Parameter phone, file (filePath/fileUrl), dan filename wajib diisi.' });
+    }
+
+    let clientData, resolvedClientId, shared = false;
+    try {
+        const resolved = await ensureClientReady(clientId || '__system__');
+        clientData = resolved.clientData;
+        resolvedClientId = resolved.clientId;
+        shared = resolved.shared;
+    } catch (err) {
+        return res.status(503).json({ 
+            error: err.message || 'Tidak ada WhatsApp client yang siap / terhubung.', 
+            code: 'GATEWAY_DISCONNECTED' 
+        });
     }
 
     let formattedPhone = `${phone}@c.us`;
@@ -663,21 +743,21 @@ app.post('/send-document', async (req, res) => {
         for (const testPath of candidatePaths) {
             if (testPath && fs.existsSync(testPath)) {
                 try {
-                    console.log(`[${clientId}] Membaca berkas langsung dari disk lokal: ${testPath}`);
+                    console.log(`[${resolvedClientId}] Membaca berkas langsung dari disk lokal: ${testPath}`);
                     const fileBuffer = fs.readFileSync(testPath);
                     const base64Data = fileBuffer.toString('base64');
                     media = new MessageMedia('application/pdf', base64Data, filename);
                     localFound = true;
                     break;
                 } catch (readErr) {
-                    console.warn(`[${clientId}] Gagal membaca berkas lokal ${testPath}:`, readErr.message);
+                    console.warn(`[${resolvedClientId}] Gagal membaca berkas lokal ${testPath}:`, readErr.message);
                 }
             }
         }
 
         // 2. FALLBACK: Jika tidak ditemukan di disk lokal, unduh via HTTP dengan timeout singkat
         if (!localFound && fileUrl) {
-            console.log(`[${clientId}] Berkas lokal tidak ditemukan, mengunduh dari URL: ${fileUrl}`);
+            console.log(`[${resolvedClientId}] Berkas lokal tidak ditemukan, mengunduh dari URL: ${fileUrl}`);
             try {
                 const fileResponse = await axios.get(fileUrl, { 
                     responseType: 'arraybuffer',
@@ -688,7 +768,7 @@ app.post('/send-document', async (req, res) => {
                 const base64Data = Buffer.from(fileResponse.data, 'binary').toString('base64');
                 media = new MessageMedia(mimeType, base64Data, filename);
             } catch (downloadErr) {
-                console.error(`[${clientId}] Gagal mengunduh file via URL (${downloadErr.message})`);
+                console.error(`[${resolvedClientId}] Gagal mengunduh file via URL (${downloadErr.message})`);
                 return res.status(400).json({ error: `Gagal memuat dokumen PDF: ${downloadErr.message}`, code: 'FILE_ERROR' });
             }
         }
@@ -696,8 +776,17 @@ app.post('/send-document', async (req, res) => {
         if (!media) {
             return res.status(400).json({ error: 'Dokumen PDF tidak ditemukan pada disk lokal maupun URL.', code: 'FILE_NOT_FOUND' });
         }
+
+        // CRITICAL FIX: Sanitize __x_id from MessageMedia to prevent
+        // "Data passed to getter must include an id property" error in newer WhatsApp Web builds.
+        if (media && typeof media === 'object') {
+            try {
+                delete media.__x_id;
+                delete media._data?.__x_id;
+            } catch (_) {}
+        }
         
-        console.log(`[${clientId}] Mengirim berkas dokumen ke ${formattedPhone}...`);
+        console.log(`[${resolvedClientId}] Mengirim berkas dokumen ke ${formattedPhone}...`);
         let response;
         try {
             response = await queueClientAction(clientData, () =>
@@ -708,7 +797,7 @@ app.post('/send-document', async (req, res) => {
         } catch (firstSendErr) {
             const msg = firstSendErr?.message || '';
             if (msg.includes('No LID for user') || msg.includes('static.whatsapp.net')) {
-                console.warn(`[${clientId}] Terdeteksi kendala LID saat kirim dokumen ke ${formattedPhone}. Mencoba refresh kontak dan kirim ulang...`);
+                console.warn(`[${resolvedClientId}] Terdeteksi kendala LID saat kirim dokumen ke ${formattedPhone}. Mencoba refresh kontak dan kirim ulang...`);
                 try {
                     if (typeof clientData.client.getContactLidAndPhone === 'function') {
                         await queueClientAction(clientData, () => clientData.client.getContactLidAndPhone([formattedPhone]));
@@ -720,15 +809,24 @@ app.post('/send-document', async (req, res) => {
                         caption: caption || '' 
                     })
                 );
+            } else if (msg.includes('id property') || msg.includes('__x_id')) {
+                // __x_id fix: second attempt with deep-cleaned media object
+                console.warn(`[${resolvedClientId}] Terdeteksi error __x_id pada media. Membersihkan dan mencoba ulang...`);
+                const cleanMedia = new MessageMedia(media.mimetype, media.data, media.filename);
+                response = await queueClientAction(clientData, () =>
+                    clientData.client.sendMessage(formattedPhone, cleanMedia, {
+                        caption: caption || ''
+                    })
+                );
             } else {
                 throw firstSendErr;
             }
         }
         
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_doc_${Date.now()}`;
-        res.json({ success: true, messageId });
+        res.json({ success: true, messageId, shared });
     } catch (error) {
-        console.error(`[${clientId}] Gagal mengirim dokumen ke ${formattedPhone}:`, error);
+        console.error(`[${resolvedClientId}] Gagal mengirim dokumen ke ${formattedPhone}:`, error);
         let errorMsg = error.message || 'Gagal mengirim dokumen via WhatsApp Gateway.';
         let errorCode = 'SEND_ERROR';
         if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
@@ -737,6 +835,38 @@ app.post('/send-document', async (req, res) => {
             errorCode = 'UNREGISTERED';
         }
         res.status(500).json({ error: errorMsg, code: errorCode });
+    }
+});
+
+// Endpoint: Quick test send (for admin verification from status page)
+app.post('/test-send', async (req, res) => {
+    const { phone, message } = req.body;
+    if (!phone) {
+        return res.status(400).json({ error: 'Parameter phone wajib diisi.' });
+    }
+
+    const ready = findAnyReadyClient();
+    if (!ready) {
+        return res.status(503).json({ error: 'Tidak ada sesi WhatsApp yang aktif.', code: 'GATEWAY_DISCONNECTED' });
+    }
+
+    const testMessage = message || `✅ Tes koneksi WhatsApp Gateway berhasil!\n\n📅 ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n🖥️ Clinical Management System`;
+
+    try {
+        const jidResult = await resolveTargetJid(ready.clientData, phone);
+        if (!jidResult.valid) {
+            return res.status(400).json({ error: jidResult.error, code: jidResult.code });
+        }
+
+        const response = await queueClientAction(ready.clientData, () =>
+            ready.clientData.client.sendMessage(jidResult.jid, testMessage)
+        );
+
+        const messageId = response?.id?._serialized || response?.id?.id || `test_${Date.now()}`;
+        res.json({ success: true, messageId, usedSession: ready.clientId });
+    } catch (error) {
+        console.error(`[TestSend] Gagal mengirim tes ke ${phone}:`, error);
+        res.status(500).json({ error: error.message || 'Gagal mengirim pesan tes.', code: 'SEND_ERROR' });
     }
 });
 

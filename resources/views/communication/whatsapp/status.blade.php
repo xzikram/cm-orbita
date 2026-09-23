@@ -85,6 +85,33 @@
                         <h2 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">WhatsApp Gateway Terhubung!</h2>
                         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">Nomor WhatsApp Anda telah berhasil dipasangkan. Sistem siap mengirim dokumen PDF terproteksi secara otomatis.</p>
                         
+                        <!-- Shared Session Info Banner -->
+                        <div id="shared-session-banner" class="hidden mt-4 mx-auto max-w-md rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
+                            <div class="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                                <svg class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                                </svg>
+                                <span>Menggunakan <strong>sesi bersama klinik</strong> — semua perangkat otomatis terhubung ke nomor WhatsApp yang sama.</span>
+                            </div>
+                        </div>
+
+                        <!-- Test Send Feature -->
+                        <div class="mt-6 mx-auto max-w-sm">
+                            <div class="rounded-lg bg-slate-50 dark:bg-slate-700/50 p-4 border border-slate-200 dark:border-slate-600">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">🧪 Tes Kirim Pesan</h4>
+                                <div class="flex gap-2">
+                                    <input type="text" id="test-phone" placeholder="Nomor HP (mis: 08xx)" class="flex-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+                                    <button id="btn-test-send" class="inline-flex items-center gap-x-1.5 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 transition duration-150 ease-in-out">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                        </svg>
+                                        Kirim Tes
+                                    </button>
+                                </div>
+                                <div id="test-result" class="hidden mt-2 text-xs"></div>
+                            </div>
+                        </div>
+
                         <!-- Reset Button -->
                         <div class="mt-6">
                             <button id="btn-reset-session" class="inline-flex items-center gap-x-2 rounded-md bg-red-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition duration-150 ease-in-out">
@@ -171,15 +198,97 @@
                     connectionError.classList.add('hidden');
                     
                     if (data.ready) {
-                        // Connected State
+                        // Connected State (own session or shared)
+                        let badgeLabel = 'Terhubung';
+                        let badgeExtra = '';
+                        if (data.shared) {
+                            badgeLabel = 'Terhubung (Sesi Bersama)';
+                            badgeExtra = `<span class="block text-[10px] font-normal text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">Melalui sesi klinik bersama</span>`;
+                        }
                         statusBadge.innerHTML = `
-                            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20">
-                                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Terhubung
+                            <span class="inline-flex flex-col items-end gap-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20">
+                                <span class="inline-flex items-center gap-x-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    ${badgeLabel}
+                                </span>
+                                ${badgeExtra}
                             </span>
                         `;
                         connectedPanel.classList.remove('hidden');
                         disconnectedPanel.classList.add('hidden');
+
+                        // Show shared session info banner if applicable
+                        const sharedBanner = document.getElementById('shared-session-banner');
+                        if (sharedBanner) {
+                            if (data.shared) {
+                                sharedBanner.classList.remove('hidden');
+                            } else {
+                                sharedBanner.classList.add('hidden');
+                            }
+                        }
+                    } else if (data.placeholder) {
+                        // Placeholder: session exists on disk but Chromium not started
+                        statusBadge.innerHTML = `
+                            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400 ring-1 ring-inset ring-amber-600/20">
+                                <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                                Tidak Aktif
+                            </span>
+                        `;
+                        connectedPanel.classList.add('hidden');
+                        disconnectedPanel.classList.remove('hidden');
+                        
+                        // Show placeholder-specific UI
+                        qrImage.classList.add('hidden');
+                        qrLoading.classList.add('hidden');
+                        let placeholderUI = document.getElementById('placeholder-panel');
+                        if (!placeholderUI) {
+                            placeholderUI = document.createElement('div');
+                            placeholderUI.id = 'placeholder-panel';
+                            placeholderUI.className = 'flex flex-col items-center gap-3';
+                            placeholderUI.innerHTML = `
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+                                    <svg class="h-7 w-7 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                    </svg>
+                                </div>
+                                <p class="text-sm text-slate-600 dark:text-slate-300">Sesi WhatsApp tersimpan tapi belum diaktifkan.</p>
+                                <button id="btn-activate-session" class="inline-flex items-center gap-x-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition duration-150 ease-in-out">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+                                    </svg>
+                                    Hubungkan Sesi Sekarang
+                                </button>
+                            `;
+                            const qrContainer = qrImage.closest('.relative');
+                            if (qrContainer) {
+                                qrContainer.parentNode.insertBefore(placeholderUI, qrContainer);
+                                qrContainer.classList.add('hidden');
+                            }
+                            
+                            document.getElementById('btn-activate-session').addEventListener('click', function() {
+                                this.disabled = true;
+                                this.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menghubungkan...';
+                                fetch(GATEWAY_URL + '/init', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ clientId: clientId })
+                                })
+                                .then(r => r.json())
+                                .then(() => {
+                                    // Remove placeholder UI, show QR waiting
+                                    placeholderUI.remove();
+                                    const qrContainer = qrImage.closest('.relative');
+                                    if (qrContainer) qrContainer.classList.remove('hidden');
+                                    qrImage.classList.add('hidden');
+                                    qrLoading.classList.remove('hidden');
+                                })
+                                .catch(err => {
+                                    alert('Gagal menghubungkan: ' + err.message);
+                                    this.disabled = false;
+                                    this.textContent = 'Hubungkan Sesi Sekarang';
+                                });
+                            });
+                        }
                     } else {
                         // Disconnected State (needs scan)
                         statusBadge.innerHTML = `
@@ -191,6 +300,14 @@
                         connectedPanel.classList.add('hidden');
                         disconnectedPanel.classList.remove('hidden');
                         
+                        // Remove placeholder panel if it exists
+                        const placeholderUI = document.getElementById('placeholder-panel');
+                        if (placeholderUI) {
+                            placeholderUI.remove();
+                            const qrContainer = qrImage.closest('.relative');
+                            if (qrContainer) qrContainer.classList.remove('hidden');
+                        }
+
                         if (data.qr) {
                             qrImage.src = data.qr;
                             qrImage.classList.remove('hidden');
@@ -252,11 +369,56 @@
                 if (btnDc) btnDc.disabled = false;
             });
         }
+
+        // Function to send test message
+        function sendTestMessage() {
+            const phoneInput = document.getElementById('test-phone');
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+            if (!phone) {
+                alert('Masukkan nomor telepon tujuan terlebih dahulu.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-test-send');
+            const resultEl = document.getElementById('test-result');
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Mengirim...';
+            resultEl.classList.add('hidden');
+
+            fetch(GATEWAY_URL + '/test-send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    resultEl.className = 'mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium';
+                    resultEl.textContent = '✅ Pesan tes berhasil dikirim! (ID: ' + data.messageId + ')';
+                } else {
+                    resultEl.className = 'mt-2 text-xs text-red-600 dark:text-red-400 font-medium';
+                    resultEl.textContent = '❌ Gagal: ' + (data.error || 'Kesalahan tidak diketahui');
+                }
+                resultEl.classList.remove('hidden');
+            })
+            .catch(err => {
+                resultEl.className = 'mt-2 text-xs text-red-600 dark:text-red-400 font-medium';
+                resultEl.textContent = '❌ Gagal menghubungi gateway: ' + err.message;
+                resultEl.classList.remove('hidden');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg> Kirim Tes';
+            });
+        }
  
         const btnReset = document.getElementById('btn-reset-session');
         const btnResetDc = document.getElementById('btn-reset-session-dc');
         if (btnReset) btnReset.addEventListener('click', resetSession);
         if (btnResetDc) btnResetDc.addEventListener('click', resetSession);
+
+        const btnTestSend = document.getElementById('btn-test-send');
+        if (btnTestSend) btnTestSend.addEventListener('click', sendTestMessage);
  
         // Poll status every 3 seconds
         checkGatewayStatus();

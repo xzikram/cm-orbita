@@ -350,7 +350,10 @@ class DocumentDeliveryController extends Controller
     public function whatsappStatus(Request $request)
     {
         $config = config('whatsapp.providers.selfhosted');
-        $url = $config['url'] ?? 'http://localhost:3000';
+        $url = $config['url'] ?? 'http://127.0.0.1:3000';
+        if (str_contains($url, 'localhost')) {
+            $url = str_replace('localhost', '127.0.0.1', $url);
+        }
         
         $status = [
             'connected' => false,
