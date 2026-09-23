@@ -19,6 +19,16 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
         $this->timeout = $config['timeout'] ?? 30;
     }
  
+    protected function sanitizePhone(string $phone): string
+    {
+        $phone = preg_replace('/@.*$/', '', $phone);
+        $clean = preg_replace('/\D/', '', $phone);
+        if (str_starts_with($clean, '0')) {
+            $clean = '62' . substr($clean, 1);
+        }
+        return $clean;
+    }
+
     public function sendMessage(string $phone, string $message): SendResult
     {
         $startTime = microtime(true);
@@ -28,7 +38,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
             $endpoint = rtrim($this->url, '/') . '/send-message';
             
             $payload = [
-                'phone' => $phone,
+                'phone' => $this->sanitizePhone($phone),
                 'message' => $message,
             ];
 
@@ -71,7 +81,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
             $endpoint = rtrim($this->url, '/') . '/send-document';
             
             $payload = [
-                'phone' => $phone,
+                'phone' => $this->sanitizePhone($phone),
                 'fileUrl' => $fileUrl,
                 'filename' => $filename,
                 'caption' => $caption,

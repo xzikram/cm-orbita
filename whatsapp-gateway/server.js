@@ -341,9 +341,9 @@ app.post('/reset-session', async (req, res) => {
     res.json({ success: true, message: `Sesi ${clientId} berhasil direset.` });
 });
 
-// Helper to resolve exact target JID and populate contact/LID store in WA Web
+// Helper to resolve exact target JID and verify registration in WA Web
 async function resolveTargetJid(clientData, rawPhone) {
-    let cleanPhone = (rawPhone || '').replace(/\D/g, '');
+    let cleanPhone = (rawPhone || '').toString().split('@')[0].replace(/\D/g, '');
     if (cleanPhone.startsWith('0')) {
         cleanPhone = '62' + cleanPhone.slice(1);
     }
@@ -354,29 +354,57 @@ async function resolveTargetJid(clientData, rawPhone) {
         return { valid: false, error: `Format nomor telepon terlalu panjang (${rawPhone}).`, code: 'INVALID_FORMAT' };
     }
 
-    try {
-        // Step 1: Check getNumberId to verify registration and retrieve exact JID/LID
-        const numberId = await queueClientAction(clientData, () => 
-            clientData.client.getNumberId(cleanPhone)
-        );
+    const standardPhoneJid = `${cleanPhone}@c.us`;
 
-        if (numberId && numberId._serialized) {
-            const targetJid = numberId._serialized;
-            // Step 2: Touch contact store to ensure LID mapping is populated in Puppeteer memory
+    try {
+        let isRegistered = false;
+        let resolvedLid = null;
+
+        // Step 1: Use getContactLidAndPhone to populate LID mapping in WA Web internal store
+        if (typeof clientData.client.getContactLidAndPhone === 'function') {
             try {
-                await queueClientAction(clientData, () => 
-                    clientData.client.getContactById(targetJid)
+                const lidPhoneList = await queueClientAction(clientData, () =>
+                    clientData.client.getContactLidAndPhone([standardPhoneJid])
                 );
-            } catch (e) {
-                // Ignore getContactById minor fail if getNumberId succeeded
-            }
-            return { valid: true, jid: targetJid, cleanPhone };
+                if (lidPhoneList && lidPhoneList[0] && (lidPhoneList[0].lid || lidPhoneList[0].pn)) {
+                    isRegistered = true;
+                    resolvedLid = lidPhoneList[0].lid || null;
+                }
+            } catch (_) {}
         }
 
-        return { valid: false, error: `Nomor telepon (${rawPhone}) tidak terdaftar di WhatsApp.`, code: 'UNREGISTERED' };
+        // Step 2: Fallback to getNumberId to verify registration
+        if (!isRegistered) {
+            const numberId = await queueClientAction(clientData, () => 
+                clientData.client.getNumberId(cleanPhone)
+            );
+            if (numberId) {
+                isRegistered = true;
+                if (numberId._serialized && numberId._serialized.endsWith('@lid')) {
+                    resolvedLid = numberId._serialized;
+                }
+            }
+        }
+
+        if (!isRegistered) {
+            return { valid: false, error: `Nomor telepon (${rawPhone}) tidak terdaftar di WhatsApp.`, code: 'UNREGISTERED' };
+        }
+
+        // Pre-warm contact stores so WhatsApp Web links phone JID and LID internally
+        try {
+            if (resolvedLid) {
+                await queueClientAction(clientData, () => clientData.client.getContactById(resolvedLid).catch(() => {}));
+            }
+            await queueClientAction(clientData, () => clientData.client.getContactById(standardPhoneJid).catch(() => {}));
+        } catch (_) {}
+
+        // CRITICAL FIX: The target JID for client.sendMessage() MUST ALWAYS be the phone JID (${cleanPhone}@c.us)!
+        // NEVER use @lid as the recipient target in sendMessage(), because WhatsApp Web requires
+        // the canonical phone-based JID to initiate a 1-to-1 conversation.
+        return { valid: true, jid: standardPhoneJid, cleanPhone, lid: resolvedLid };
     } catch (err) {
-        console.warn(`[JID Resolver] Gagal cek getNumberId untuk ${cleanPhone} (${err.message}). Fallback ke JID standar...`);
-        return { valid: true, jid: `${cleanPhone}@c.us`, cleanPhone };
+        console.warn(`[JID Resolver] Gagal cek nomor ${cleanPhone} (${err.message}). Fallback ke JID standar...`);
+        return { valid: true, jid: standardPhoneJid, cleanPhone };
     }
 }
 
@@ -418,9 +446,29 @@ app.post('/send-message', async (req, res) => {
         }
         formattedPhone = jidResult.jid;
 
-        const response = await queueClientAction(clientData, () => 
-            clientData.client.sendMessage(formattedPhone, message)
-        );
+        let response;
+        try {
+            response = await queueClientAction(clientData, () => 
+                clientData.client.sendMessage(formattedPhone, message)
+            );
+        } catch (firstSendErr) {
+            const msg = firstSendErr?.message || '';
+            if (msg.includes('No LID for user') || msg.includes('static.whatsapp.net')) {
+                console.warn(`[${clientId}] Terdeteksi kendala LID saat kirim pesan ke ${formattedPhone}. Mencoba refresh kontak dan kirim ulang...`);
+                try {
+                    if (typeof clientData.client.getContactLidAndPhone === 'function') {
+                        await queueClientAction(clientData, () => clientData.client.getContactLidAndPhone([formattedPhone]));
+                    }
+                    await queueClientAction(clientData, () => clientData.client.getChatById(formattedPhone));
+                } catch (_) {}
+                response = await queueClientAction(clientData, () => 
+                    clientData.client.sendMessage(formattedPhone, message)
+                );
+            } else {
+                throw firstSendErr;
+            }
+        }
+
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_msg_${Date.now()}`;
         res.json({ success: true, messageId });
     } catch (error) {
@@ -428,7 +476,8 @@ app.post('/send-message', async (req, res) => {
         let errorMsg = error.message || 'Gagal mengirim pesan via WhatsApp Gateway.';
         let errorCode = 'SEND_ERROR';
         if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
-            errorMsg = `Gagal mengirim ke ${formattedPhone}: Kontak WhatsApp tidak dapat terverifikasi (LID tidak ditemukan). Pastikan nomor HP terdaftar di WhatsApp.`;
+            const cleanDisplay = formattedPhone.replace(/@.*$/, '');
+            errorMsg = `Gagal mengirim ke ${cleanDisplay}: Kontak WhatsApp tidak dapat terverifikasi. Pastikan nomor HP terdaftar di WhatsApp.`;
             errorCode = 'UNREGISTERED';
         }
         res.status(500).json({ error: errorMsg, code: errorCode });
@@ -534,11 +583,32 @@ app.post('/send-document', async (req, res) => {
         }
         
         console.log(`[${clientId}] Mengirim berkas dokumen ke ${formattedPhone}...`);
-        const response = await queueClientAction(clientData, () =>
-            clientData.client.sendMessage(formattedPhone, media, { 
-                caption: caption || '' 
-            })
-        );
+        let response;
+        try {
+            response = await queueClientAction(clientData, () =>
+                clientData.client.sendMessage(formattedPhone, media, { 
+                    caption: caption || '' 
+                })
+            );
+        } catch (firstSendErr) {
+            const msg = firstSendErr?.message || '';
+            if (msg.includes('No LID for user') || msg.includes('static.whatsapp.net')) {
+                console.warn(`[${clientId}] Terdeteksi kendala LID saat kirim dokumen ke ${formattedPhone}. Mencoba refresh kontak dan kirim ulang...`);
+                try {
+                    if (typeof clientData.client.getContactLidAndPhone === 'function') {
+                        await queueClientAction(clientData, () => clientData.client.getContactLidAndPhone([formattedPhone]));
+                    }
+                    await queueClientAction(clientData, () => clientData.client.getChatById(formattedPhone));
+                } catch (_) {}
+                response = await queueClientAction(clientData, () =>
+                    clientData.client.sendMessage(formattedPhone, media, { 
+                        caption: caption || '' 
+                    })
+                );
+            } else {
+                throw firstSendErr;
+            }
+        }
         
         const messageId = response?.id?._serialized || response?.id?.id || (typeof response?.id === 'string' ? response.id : null) || `selfhosted_doc_${Date.now()}`;
         res.json({ success: true, messageId });
@@ -547,7 +617,8 @@ app.post('/send-document', async (req, res) => {
         let errorMsg = error.message || 'Gagal mengirim dokumen via WhatsApp Gateway.';
         let errorCode = 'SEND_ERROR';
         if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
-            errorMsg = `Gagal mengirim ke ${formattedPhone}: Kontak WhatsApp tidak dapat terverifikasi (LID tidak ditemukan). Pastikan nomor HP terdaftar di WhatsApp.`;
+            const cleanDisplay = formattedPhone.replace(/@.*$/, '');
+            errorMsg = `Gagal mengirim ke ${cleanDisplay}: Kontak WhatsApp tidak dapat terverifikasi. Pastikan nomor HP terdaftar di WhatsApp.`;
             errorCode = 'UNREGISTERED';
         }
         res.status(500).json({ error: errorMsg, code: errorCode });
