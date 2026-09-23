@@ -50,7 +50,7 @@ return [
 
         'selfhosted' => [
             'driver' => 'selfhosted',
-            'url' => env('WHATSAPP_SELFHOSTED_URL', 'http://localhost:3000'),
+            'url' => env('WHATSAPP_SELFHOSTED_URL', 'http://127.0.0.1:3000'),
             'timeout' => 30,
         ],
 

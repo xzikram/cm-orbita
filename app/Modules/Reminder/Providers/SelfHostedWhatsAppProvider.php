@@ -15,7 +15,10 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
     public function __construct()
     {
         $config = config('whatsapp.providers.selfhosted');
-        $this->url = $config['url'] ?? 'http://localhost:3000';
+        $this->url = $config['url'] ?? 'http://127.0.0.1:3000';
+        if (str_contains($this->url, 'localhost')) {
+            $this->url = str_replace('localhost', '127.0.0.1', $this->url);
+        }
         $this->timeout = $config['timeout'] ?? 30;
     }
  
