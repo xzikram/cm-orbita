@@ -70,10 +70,9 @@ fi
 echo "👉 Merestart Queue Worker (Supervisor)..."
 sudo supervisorctl restart laravel-worker:*
 
-# 8. Perbaiki perizinan berkas (Permission) agar tidak terjadi error log
+# 8. Perbaiki perizinan berkas (Permission) untuk storage dan cache Laravel
 echo "👉 Memperbaiki izin berkas (Permissions) untuk Nginx..."
-sudo chown -R www-data:www-data /var/www/clinical-system
-sudo chmod -R 755 /var/www/clinical-system
+sudo chown -R www-data:www-data /var/www/clinical-system/storage /var/www/clinical-system/bootstrap/cache
 sudo chmod -R 775 /var/www/clinical-system/storage /var/www/clinical-system/bootstrap/cache
 
 echo "==============================================="
