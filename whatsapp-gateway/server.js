@@ -22,7 +22,7 @@ const clients = new Map();
 
 // === RESOURCE LIMITS ===
 // Server 8GB RAM: max 3 Chromium browsers bersamaan (~300MB each)
-const MAX_CONCURRENT_CLIENTS = parseInt(process.env.MAX_WA_SESSIONS || '3', 10);
+const MAX_CONCURRENT_CLIENTS = parseInt(process.env.MAX_WA_SESSIONS || '1', 10);
 const STAGGER_DELAY_MS = 10000; // Jeda 10 detik antar inisialisasi saat startup
 const IDLE_EVICT_MS = 15 * 60 * 1000; // Evict sesi idle > 15 menit jika melebihi limit
 
