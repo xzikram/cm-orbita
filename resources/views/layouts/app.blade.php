@@ -71,7 +71,7 @@
             @include('components.navbar')
 
             <main class="py-8 lg:py-10">
-                <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                <div class="px-4 sm:px-6 lg:px-8 max-w-7xl 2xl:max-w-[1600px] mx-auto" style="max-width: 1600px;">
 
                     {{-- Success Alert --}}
                     @if (session('success'))
