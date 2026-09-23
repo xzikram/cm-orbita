@@ -134,7 +134,8 @@ class DocumentDeliveryService
                     phone: $recipientPhone,
                     fileUrl: $fileUrl,
                     filename: $fileName,
-                    caption: $textBody
+                    caption: $textBody,
+                    filePath: $publicPath
                 );
 
                 if ($result->success) {
@@ -692,4 +693,77 @@ class DocumentDeliveryService
 
         return $deliveries;
     }
+
+    /**
+     * Resend an existing document delivery, optionally with a new recipient phone number.
+     */
+    public function resendDelivery(DocumentDelivery $delivery, ?string $newPhone = null): DocumentDelivery
+    {
+        $delivery->loadMissing(['patient', 'documentType', 'emailTemplate', 'processedDocument']);
+
+        if ($newPhone) {
+            $delivery->recipient_phone = $newPhone;
+        }
+
+        if ($delivery->channel === 'whatsapp') {
+            $phone = $delivery->recipient_phone;
+            if (!$phone) {
+                throw new \Exception('Nomor WhatsApp tujuan belum diisi.');
+            }
+
+            // Verify attachment exists
+            $storagePath = $delivery->attachment_path;
+            if (!$storagePath || !Storage::disk('public')->exists($storagePath)) {
+                // Try from processed document if available
+                if ($delivery->processedDocument && Storage::disk('public')->exists($delivery->processedDocument->generated_file_path)) {
+                    $storagePath = $delivery->processedDocument->generated_file_path;
+                    $delivery->attachment_path = $storagePath;
+                } else {
+                    throw new \Exception('Berkas lampiran dokumen tidak ditemukan pada penyimpanan server.');
+                }
+            }
+
+            $fileUrl = asset(Storage::url($storagePath));
+            $caption = $this->getWhatsAppMessageBody($delivery);
+            $filename = $delivery->attachment_name ?: basename($storagePath);
+
+            $provider = app(\App\Modules\Reminder\Contracts\WhatsAppProviderInterface::class);
+            $result = $provider->sendDocumentFile(
+                phone: $phone,
+                fileUrl: $fileUrl,
+                filename: $filename,
+                caption: $caption,
+                filePath: $storagePath
+            );
+
+            if ($result->success) {
+                $delivery->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'error_message' => null,
+                    'recipient_phone' => $phone,
+                ]);
+
+                $this->auditLogService->logCreated('DocumentDelivery', $delivery->id, [
+                    'action' => 'Resent Document WhatsApp',
+                    'patient' => $delivery->patient?->name,
+                    'document' => $delivery->documentType?->name,
+                    'new_phone' => $newPhone,
+                ]);
+
+                return $delivery;
+            } else {
+                $delivery->update([
+                    'status' => 'failed',
+                    'error_message' => $result->error ?? 'Gagal mengirim ulang dokumen via WhatsApp.',
+                    'recipient_phone' => $phone,
+                ]);
+
+                throw new \Exception($result->error ?? 'Gagal mengirim ulang dokumen via WhatsApp.');
+            }
+        }
+
+        throw new \Exception('Fitur kirim ulang saat ini hanya didukung untuk saluran WhatsApp.');
+    }
 }
+

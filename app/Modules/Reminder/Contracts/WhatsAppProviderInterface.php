@@ -29,5 +29,5 @@ interface WhatsAppProviderInterface
     /**
      * Send a document file via WhatsApp.
      */
-    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption): SendResult;
+    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption, ?string $filePath = null): SendResult;
 }

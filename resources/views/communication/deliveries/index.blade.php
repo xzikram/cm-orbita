@@ -3,7 +3,20 @@
 @section('title', 'Document Deliveries')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ 
+    showResendModal: false, 
+    deliveryId: null, 
+    patientName: '', 
+    newPhone: '', 
+    actionUrl: '',
+    openResendModal(id, phone, name) {
+        this.deliveryId = id;
+        this.newPhone = phone || '';
+        this.patientName = name || '';
+        this.actionUrl = '{{ url('communication/deliveries') }}/' + id + '/resend-phone';
+        this.showResendModal = true;
+    }
+}">
     <!-- Page Header -->
     <div class="page-header">
         <div class="sm:flex sm:items-center sm:justify-between">
@@ -35,19 +48,28 @@
             </thead>
             <tbody>
                 @forelse($deliveries as $delivery)
+                    @php
+                        $statusInfo = $delivery->status_info;
+                    @endphp
                     <tr>
                         <td class="font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                             {{ $delivery->created_at->format('d M Y, H:i') }}
                         </td>
                         <td>
                             <div class="font-semibold text-slate-900 dark:text-white">{{ $delivery->patient->name }}</div>
-                            <div class="text-xs text-slate-400 mt-0.5">
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                 @if(($delivery->channel ?? 'email') === 'whatsapp')
-                                    WA: {{ $delivery->recipient_phone ?? '-' }}
+                                    <span>WA: <strong class="font-mono">{{ $delivery->recipient_phone ?? '-' }}</strong></span>
                                 @else
-                                    Email: {{ $delivery->recipient_email ?? '-' }}
+                                    <span>Email: {{ $delivery->recipient_email ?? '-' }}</span>
                                 @endif
                             </div>
+                            @if($delivery->status === 'failed')
+                                <div class="text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1 mt-0.5" title="{{ $delivery->error_message }}">
+                                    <span>⚠️</span>
+                                    <span>{{ Str::limit($statusInfo['description'], 45) }}</span>
+                                </div>
+                            @endif
                         </td>
                         <td class="text-slate-600 dark:text-slate-300">
                             {{ $delivery->documentType->name }}
@@ -66,16 +88,24 @@
                             @endif
                         </td>
                         <td>
-                            @if(in_array($delivery->status, ['sent', 'success']))
-                                <span class="badge-green">SENT</span>
-                            @elseif($delivery->status === 'failed')
-                                <span class="badge-red">FAILED</span>
-                            @else
-                                <span class="badge-yellow">{{ strtoupper($delivery->status) }}</span>
-                            @endif
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ring-1 ring-inset {{ $statusInfo['class'] }}">
+                                {{ $statusInfo['label'] }}
+                            </span>
                         </td>
                         <td class="text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-x-2">
+                                @if($delivery->status === 'failed' && ($delivery->channel ?? 'email') === 'whatsapp')
+                                    <button type="button" 
+                                        @click="openResendModal({{ $delivery->id }}, '{{ $delivery->recipient_phone }}', '{{ addslashes($delivery->patient->name) }}')"
+                                        class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-inset ring-amber-600/30 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-sm"
+                                        title="Koreksi Nomor & Kirim Ulang">
+                                        <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                                        </svg>
+                                        Koreksi Nomor
+                                    </button>
+                                @endif
+
                                 @if($delivery->status === 'failed')
                                     <form action="{{ route('communication.deliveries.markAsSent', $delivery) }}" method="POST" class="inline">
                                         @csrf
@@ -107,6 +137,86 @@
 
     <div class="mt-2">
         {{ $deliveries->links() }}
+    </div>
+
+    <!-- Modal Koreksi Nomor & Kirim Ulang -->
+    <div x-show="showResendModal" 
+        x-cloak 
+        class="fixed inset-0 z-50 overflow-y-auto" 
+        aria-labelledby="modal-title" 
+        role="dialog" 
+        aria-modal="true">
+        
+        <!-- Backdrop -->
+        <div x-show="showResendModal"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            @click="showResendModal = false">
+        </div>
+
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div x-show="showResendModal"
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-200 dark:border-slate-700 p-6">
+                
+                <form :action="actionUrl" method="POST" class="space-y-4">
+                    @csrf
+                    <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white" id="modal-title">Koreksi Nomor & Kirim Ulang</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Kirim ulang dokumen yang sama ke nomor WhatsApp yang valid.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                        <div>Pasien: <strong class="text-slate-900 dark:text-white" x-text="patientName"></strong></div>
+                        <div class="text-[11px] text-slate-500">Dokumen PDF ber-kop & proteksi yang telah dibuat akan langsung dikirimkan ke nomor baru.</div>
+                    </div>
+
+                    <div>
+                        <label for="modal_new_phone" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Nomor WhatsApp Baru *</label>
+                        <input type="text" 
+                            name="new_phone" 
+                            id="modal_new_phone" 
+                            x-model="newPhone" 
+                            required 
+                            placeholder="Contoh: 081355427971" 
+                            class="input-field mt-1.5 font-mono text-sm">
+                        <p class="text-[11px] text-slate-500 mt-1">Pastikan nomor aktif dan terdaftar di WhatsApp (minimal 10 digit angka).</p>
+                    </div>
+
+                    <div class="mt-5 sm:mt-6 flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                        <button type="button" 
+                            @click="showResendModal = false" 
+                            class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all">
+                            Batal
+                        </button>
+                        <button type="submit" 
+                            class="btn-primary py-2 px-4 text-xs font-semibold flex items-center gap-1.5">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                            Kirim Ulang Sekarang
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 @endsection

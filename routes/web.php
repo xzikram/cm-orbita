@@ -192,6 +192,7 @@ Route::middleware(['auth'])->group(function () {
         Route::middleware('permission:communication.deliveries.manage')->group(function () {
             Route::get('simrs/search-patients', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'searchSimrsPatients'])->name('simrs.search-patients');
             Route::post('deliveries/{delivery}/mark-as-sent', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'markAsSent'])->name('deliveries.markAsSent');
+            Route::post('deliveries/{delivery}/resend-phone', [\App\Modules\Communication\Controllers\DocumentDeliveryController::class, 'resendWithNewPhone'])->name('deliveries.resendPhone');
             Route::resource('deliveries', \App\Modules\Communication\Controllers\DocumentDeliveryController::class)->only(['index', 'create', 'store', 'show']);
         });
     });

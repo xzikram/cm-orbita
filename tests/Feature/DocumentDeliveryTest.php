@@ -147,4 +147,86 @@ class DocumentDeliveryTest extends TestCase
         $this->assertEquals('sent', $delivery->status);
         $this->assertEquals('whatsapp', $delivery->channel);
     }
+
+    public function test_can_resend_delivery_with_new_phone(): void
+    {
+        $patient = Patient::create([
+            'clinic_id' => $this->clinic->id,
+            'medical_record_number' => 'RM-99999',
+            'name' => 'Irawaty',
+            'phone' => '0811471997',
+            'date_of_birth' => '1985-06-20',
+            'is_active' => true,
+        ]);
+
+        // Create a dummy file in public disk
+        $filePath = 'deliveries/test_file.pdf';
+        \Illuminate\Support\Facades\Storage::disk('public')->put($filePath, '%PDF-1.4 test');
+
+        $delivery = DocumentDelivery::create([
+            'clinic_id' => $this->clinic->id,
+            'patient_id' => $patient->id,
+            'document_type_id' => $this->documentType->id,
+            'email_template_id' => $this->emailTemplate->id,
+            'sent_by' => $this->user->id,
+            'channel' => 'whatsapp',
+            'recipient_phone' => '0811471997',
+            'attachment_name' => 'test_file.pdf',
+            'attachment_path' => $filePath,
+            'status' => 'failed',
+            'error_message' => 'Nomor telepon (0811471997) tidak terdaftar di WhatsApp.',
+        ]);
+
+        // Mock WhatsApp Provider
+        $mockProvider = $this->createMock(WhatsAppProviderInterface::class);
+        $mockProvider->method('sendDocumentFile')
+            ->willReturn(SendResult::success('msg_123', 50));
+        $this->app->instance(WhatsAppProviderInterface::class, $mockProvider);
+
+        \Spatie\Permission\Models\Permission::findOrCreate('communication.deliveries.manage', 'web');
+        $this->user->givePermissionTo('communication.deliveries.manage');
+
+        $response = $this->actingAs($this->user)
+            ->post(route('communication.deliveries.resendPhone', $delivery), [
+                'new_phone' => '081355427971',
+            ]);
+
+        $response->assertSessionHas('success');
+        $delivery->refresh();
+        $this->assertEquals('sent', $delivery->status);
+        $this->assertEquals('081355427971', $delivery->recipient_phone);
+        $this->assertNull($delivery->error_message);
+    }
+
+    public function test_delivery_status_info_accessor(): void
+    {
+        $delivery = new DocumentDelivery([
+            'status' => 'failed',
+            'channel' => 'whatsapp',
+            'error_message' => 'Nomor telepon (0811471997) tidak terdaftar di WhatsApp.',
+        ]);
+
+        $info = $delivery->status_info;
+        $this->assertEquals('unregistered', $info['type']);
+        $this->assertEquals('TIDAK ADA WA', $info['label']);
+        $this->assertTrue($info['can_resend']);
+
+        $deliveryFormatError = new DocumentDelivery([
+            'status' => 'failed',
+            'channel' => 'whatsapp',
+            'error_message' => 'Format nomor telepon tidak valid (kurang dari 10 digit).',
+        ]);
+        $infoFormat = $deliveryFormatError->status_info;
+        $this->assertEquals('invalid_format', $infoFormat['type']);
+        $this->assertEquals('FORMAT SALAH', $infoFormat['label']);
+
+        $deliverySent = new DocumentDelivery([
+            'status' => 'sent',
+            'channel' => 'whatsapp',
+        ]);
+        $infoSent = $deliverySent->status_info;
+        $this->assertEquals('sent', $infoSent['type']);
+        $this->assertEquals('SENT', $infoSent['label']);
+    }
 }
+

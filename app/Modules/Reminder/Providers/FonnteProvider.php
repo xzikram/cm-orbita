@@ -86,7 +86,7 @@ class FonnteProvider implements WhatsAppProviderInterface
         return 'fonnte';
     }
 
-    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption): SendResult
+    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption, ?string $filePath = null): SendResult
     {
         $startTime = microtime(true);
 

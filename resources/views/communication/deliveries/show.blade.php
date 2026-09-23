@@ -14,17 +14,18 @@
 
     <div class="space-y-6">
         @if($delivery->status === 'failed' && $delivery->error_message)
-            <div class="rounded-md bg-red-50 dark:bg-red-950/20 p-4 border border-red-200 dark:border-red-800/30">
+            @php $statusInfo = $delivery->status_info; @endphp
+            <div class="rounded-2xl bg-amber-50 dark:bg-amber-950/20 p-5 border border-amber-200 dark:border-amber-800/40 space-y-4">
                 <div class="flex items-start justify-between gap-x-4">
                     <div class="flex items-start gap-x-3">
                         <div class="flex-shrink-0 mt-0.5">
-                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-                            </svg>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-inset {{ $statusInfo['class'] }}">
+                                {{ $statusInfo['label'] }}
+                            </span>
                         </div>
                         <div>
-                            <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Gagal Mengirim Dokumen</h3>
-                            <div class="mt-1 text-sm text-red-700 dark:text-red-400">
+                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Pengiriman Dokumen Belum Berhasil</h3>
+                            <div class="mt-1 text-sm text-slate-700 dark:text-slate-300">
                                 <p>{{ $delivery->error_message }}</p>
                             </div>
                         </div>
@@ -36,6 +37,24 @@
                         </button>
                     </form>
                 </div>
+
+                @if(($delivery->channel ?? 'email') === 'whatsapp')
+                    <div class="pt-3 border-t border-amber-200/70 dark:border-amber-800/40">
+                        <form action="{{ route('communication.deliveries.resendPhone', $delivery) }}" method="POST" class="flex flex-wrap items-end gap-3">
+                            @csrf
+                            <div class="flex-1 min-w-[220px]">
+                                <label for="new_phone" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Koreksi Nomor WhatsApp Tujuan</label>
+                                <input type="text" name="new_phone" id="new_phone" value="{{ old('new_phone', $delivery->recipient_phone) }}" required class="input-field mt-1 text-sm py-1.5 font-mono" placeholder="Contoh: 081355427971">
+                            </div>
+                            <button type="submit" onclick="return confirm('Kirim ulang dokumen yang sama ke nomor baru ini?')" class="btn-primary py-2 px-4 text-xs font-semibold flex items-center gap-1.5">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                                </svg>
+                                Kirim Ulang ke Nomor Baru
+                            </button>
+                        </form>
+                    </div>
+                @endif
             </div>
         @endif
 
@@ -77,13 +96,10 @@
                 <div>
                     <dt class="text-slate-500">Status</dt>
                     <dd class="mt-1">
-                        @if(in_array($delivery->status, ['sent', 'success']))
-                            <span id="status-badge" class="inline-flex items-center rounded-full bg-green-50 dark:bg-green-900/20 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:text-green-400 ring-1 ring-inset ring-green-600/20">SENT</span>
-                        @elseif($delivery->status === 'failed')
-                            <span id="status-badge" class="inline-flex items-center rounded-full bg-red-50 dark:bg-red-900/20 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:text-red-400 ring-1 ring-inset ring-red-600/20">FAILED</span>
-                        @else
-                            <span id="status-badge" class="inline-flex items-center rounded-full bg-yellow-50 dark:bg-yellow-900/20 px-2.5 py-0.5 text-xs font-medium text-yellow-700 dark:text-yellow-400 ring-1 ring-inset ring-yellow-600/20">{{ strtoupper($delivery->status) }}</span>
-                        @endif
+                        @php $statusInfo = $delivery->status_info; @endphp
+                        <span id="status-badge" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset {{ $statusInfo['class'] }}">
+                            {{ $statusInfo['label'] }}
+                        </span>
                     </dd>
                 </div>
                 <div>

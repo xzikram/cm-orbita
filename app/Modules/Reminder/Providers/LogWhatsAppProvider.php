@@ -51,7 +51,7 @@ class LogWhatsAppProvider implements WhatsAppProviderInterface
         return 'log';
     }
 
-    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption): SendResult
+    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption, ?string $filePath = null): SendResult
     {
         Log::channel('single')->info('[WhatsApp Log Provider] Document file sent', [
             'phone' => $phone,

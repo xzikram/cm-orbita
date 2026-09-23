@@ -62,7 +62,7 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
         }
     }
  
-    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption): SendResult
+    public function sendDocumentFile(string $phone, string $fileUrl, string $filename, string $caption, ?string $filePath = null): SendResult
     {
         $startTime = microtime(true);
         $clientId = $this->getClientId();
@@ -76,6 +76,10 @@ class SelfHostedWhatsAppProvider implements WhatsAppProviderInterface
                 'filename' => $filename,
                 'caption' => $caption,
             ];
+
+            if ($filePath) {
+                $payload['filePath'] = $filePath;
+            }
 
             if ($clientId) {
                 $payload['clientId'] = $clientId;

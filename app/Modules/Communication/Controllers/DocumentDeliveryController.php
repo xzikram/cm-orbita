@@ -315,6 +315,38 @@ class DocumentDeliveryController extends Controller
         return back()->with('success', 'Status pengiriman berhasil diperbarui menjadi Terkirim.');
     }
 
+    public function resendWithNewPhone(Request $request, DocumentDelivery $delivery)
+    {
+        abort_if($delivery->clinic_id !== Auth::user()->clinic_id, 403);
+
+        $request->validate([
+            'new_phone' => 'required|string|min:10|max:20',
+        ]);
+
+        try {
+            $this->deliveryService->resendDelivery($delivery, $request->new_phone);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Dokumen berhasil dikirim ulang ke nomor ' . $request->new_phone,
+                    'delivery' => $delivery,
+                ]);
+            }
+
+            return back()->with('success', 'Dokumen berhasil dikirim ulang ke nomor ' . $request->new_phone);
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim ulang: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->with('error', 'Gagal mengirim ulang: ' . $e->getMessage());
+        }
+    }
+
     public function whatsappStatus(Request $request)
     {
         $config = config('whatsapp.providers.selfhosted');

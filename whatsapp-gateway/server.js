@@ -347,8 +347,11 @@ async function resolveTargetJid(clientData, rawPhone) {
     if (cleanPhone.startsWith('0')) {
         cleanPhone = '62' + cleanPhone.slice(1);
     }
-    if (!cleanPhone) {
-        return { valid: false, error: 'Nomor telepon tidak boleh kosong atau format tidak valid.' };
+    if (!cleanPhone || cleanPhone.length < 10) {
+        return { valid: false, error: `Format nomor telepon tidak valid (${rawPhone}). Minimal 10 digit angka.`, code: 'INVALID_FORMAT' };
+    }
+    if (cleanPhone.length > 16) {
+        return { valid: false, error: `Format nomor telepon terlalu panjang (${rawPhone}).`, code: 'INVALID_FORMAT' };
     }
 
     try {
@@ -370,7 +373,7 @@ async function resolveTargetJid(clientData, rawPhone) {
             return { valid: true, jid: targetJid, cleanPhone };
         }
 
-        return { valid: false, error: `Nomor telepon (${rawPhone}) tidak terdaftar di WhatsApp.` };
+        return { valid: false, error: `Nomor telepon (${rawPhone}) tidak terdaftar di WhatsApp.`, code: 'UNREGISTERED' };
     } catch (err) {
         console.warn(`[JID Resolver] Gagal cek getNumberId untuk ${cleanPhone} (${err.message}). Fallback ke JID standar...`);
         return { valid: true, jid: `${cleanPhone}@c.us`, cleanPhone };
@@ -385,7 +388,7 @@ app.post('/send-message', async (req, res) => {
     
     // Strict Device Check: If clientId is specified, it must be ready on its own
     if (clientId && (!clientData || !clientData.isReady)) {
-        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.` });
+        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.`, code: 'GATEWAY_DISCONNECTED' });
     }
 
     // If no clientId provided at all (e.g. CLI/cron), fallback to first ready client
@@ -400,7 +403,7 @@ app.post('/send-message', async (req, res) => {
     }
 
     if (!clientData || !clientData.isReady) {
-        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.' });
+        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.', code: 'GATEWAY_DISCONNECTED' });
     }
 
     if (!phone || !message) {
@@ -411,7 +414,7 @@ app.post('/send-message', async (req, res) => {
     try {
         const jidResult = await resolveTargetJid(clientData, phone);
         if (!jidResult.valid) {
-            return res.status(400).json({ error: jidResult.error });
+            return res.status(400).json({ error: jidResult.error, code: jidResult.code || 'INVALID_PHONE' });
         }
         formattedPhone = jidResult.jid;
 
@@ -423,22 +426,24 @@ app.post('/send-message', async (req, res) => {
     } catch (error) {
         console.error(`[${clientId}] Gagal mengirim pesan ke ${formattedPhone}:`, error);
         let errorMsg = error.message || 'Gagal mengirim pesan via WhatsApp Gateway.';
+        let errorCode = 'SEND_ERROR';
         if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
             errorMsg = `Gagal mengirim ke ${formattedPhone}: Kontak WhatsApp tidak dapat terverifikasi (LID tidak ditemukan). Pastikan nomor HP terdaftar di WhatsApp.`;
+            errorCode = 'UNREGISTERED';
         }
-        res.status(500).json({ error: errorMsg });
+        res.status(500).json({ error: errorMsg, code: errorCode });
     }
 });
 
 // Endpoint: Send document file (PDF, etc.)
 app.post('/send-document', async (req, res) => {
-    let { clientId, phone, fileUrl, filename, caption } = req.body;
+    let { clientId, phone, fileUrl, filePath, filename, caption } = req.body;
 
     let clientData = clientId ? clients.get(clientId) : null;
 
     // Strict Device Check: If clientId is specified, it must be ready on its own
     if (clientId && (!clientData || !clientData.isReady)) {
-        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.` });
+        return res.status(503).json({ error: `WhatsApp pada perangkat ini (${clientId}) belum terhubung. Silakan pindai QR Code terlebih dahulu.`, code: 'GATEWAY_DISCONNECTED' });
     }
 
     // If no clientId provided at all (e.g. CLI/cron), fallback to first ready client
@@ -453,54 +458,79 @@ app.post('/send-document', async (req, res) => {
     }
 
     if (!clientData || !clientData.isReady) {
-        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.' });
+        return res.status(503).json({ error: 'Tidak ada WhatsApp client yang siap / terhubung.', code: 'GATEWAY_DISCONNECTED' });
     }
 
-    if (!phone || !fileUrl || !filename) {
-        return res.status(400).json({ error: 'Parameter phone, fileUrl, dan filename wajib diisi.' });
+    if (!phone || (!fileUrl && !filePath) || !filename) {
+        return res.status(400).json({ error: 'Parameter phone, file (filePath/fileUrl), dan filename wajib diisi.' });
     }
 
     let formattedPhone = `${phone}@c.us`;
     try {
         const jidResult = await resolveTargetJid(clientData, phone);
         if (!jidResult.valid) {
-            return res.status(400).json({ error: jidResult.error });
+            return res.status(400).json({ error: jidResult.error, code: jidResult.code || 'INVALID_PHONE' });
         }
         formattedPhone = jidResult.jid;
 
-        console.log(`[${clientId}] Mengunduh file dari URL: ${fileUrl}`);
-        
         let media = null;
-        try {
-            // Fetch the file as an arraybuffer
-            const fileResponse = await axios.get(fileUrl, { 
-                responseType: 'arraybuffer',
-                timeout: 15000 // 15 seconds timeout
-            });
-            
-            const mimeType = fileResponse.headers['content-type'] || 'application/pdf';
-            const base64Data = Buffer.from(fileResponse.data, 'binary').toString('base64');
-            media = new MessageMedia(mimeType, base64Data, filename);
-        } catch (downloadErr) {
-            console.warn(`[${clientId}] Gagal mengunduh file via URL (${downloadErr.message}), mencoba fallback berkas lokal...`);
-            
-            // Try extracting relative path from fileUrl (e.g., /storage/deliveries/...)
+        let localFound = false;
+
+        // 1. PRIORITAS UTAMA: Baca langsung dari disk lokal (instan, bebas timeout)
+        const candidatePaths = [];
+        if (filePath) {
+            if (path.isAbsolute(filePath)) {
+                candidatePaths.push(filePath);
+            }
+            const cleanRel = filePath.replace(/^[/\\]+/, '').replace(/^storage[/\\]+/, '');
+            candidatePaths.push(path.join(__dirname, '..', 'storage', 'app', 'public', cleanRel));
+            candidatePaths.push(path.join(__dirname, '..', 'storage', 'app', cleanRel));
+            candidatePaths.push(path.join(__dirname, '..', 'public', 'storage', cleanRel));
+        }
+        if (fileUrl) {
             try {
                 const parsedUrl = new URL(fileUrl);
                 const relPath = parsedUrl.pathname.replace(/^\/storage\//, '');
-                const localDiskPath = path.join(__dirname, '..', 'storage', 'app', 'public', relPath);
-                
-                if (fs.existsSync(localDiskPath)) {
-                    console.log(`[${clientId}] Berhasil menemukan berkas di lokal disk: ${localDiskPath}`);
-                    const fileBuffer = fs.readFileSync(localDiskPath);
+                candidatePaths.push(path.join(__dirname, '..', 'storage', 'app', 'public', relPath));
+                candidatePaths.push(path.join(__dirname, '..', 'public', 'storage', relPath));
+            } catch (_) {}
+        }
+
+        for (const testPath of candidatePaths) {
+            if (testPath && fs.existsSync(testPath)) {
+                try {
+                    console.log(`[${clientId}] Membaca berkas langsung dari disk lokal: ${testPath}`);
+                    const fileBuffer = fs.readFileSync(testPath);
                     const base64Data = fileBuffer.toString('base64');
                     media = new MessageMedia('application/pdf', base64Data, filename);
-                } else {
-                    throw downloadErr;
+                    localFound = true;
+                    break;
+                } catch (readErr) {
+                    console.warn(`[${clientId}] Gagal membaca berkas lokal ${testPath}:`, readErr.message);
                 }
-            } catch (fallbackErr) {
-                throw downloadErr;
             }
+        }
+
+        // 2. FALLBACK: Jika tidak ditemukan di disk lokal, unduh via HTTP dengan timeout singkat
+        if (!localFound && fileUrl) {
+            console.log(`[${clientId}] Berkas lokal tidak ditemukan, mengunduh dari URL: ${fileUrl}`);
+            try {
+                const fileResponse = await axios.get(fileUrl, { 
+                    responseType: 'arraybuffer',
+                    timeout: 5000 // 5 seconds timeout
+                });
+                
+                const mimeType = fileResponse.headers['content-type'] || 'application/pdf';
+                const base64Data = Buffer.from(fileResponse.data, 'binary').toString('base64');
+                media = new MessageMedia(mimeType, base64Data, filename);
+            } catch (downloadErr) {
+                console.error(`[${clientId}] Gagal mengunduh file via URL (${downloadErr.message})`);
+                return res.status(400).json({ error: `Gagal memuat dokumen PDF: ${downloadErr.message}`, code: 'FILE_ERROR' });
+            }
+        }
+
+        if (!media) {
+            return res.status(400).json({ error: 'Dokumen PDF tidak ditemukan pada disk lokal maupun URL.', code: 'FILE_NOT_FOUND' });
         }
         
         console.log(`[${clientId}] Mengirim berkas dokumen ke ${formattedPhone}...`);
@@ -515,10 +545,12 @@ app.post('/send-document', async (req, res) => {
     } catch (error) {
         console.error(`[${clientId}] Gagal mengirim dokumen ke ${formattedPhone}:`, error);
         let errorMsg = error.message || 'Gagal mengirim dokumen via WhatsApp Gateway.';
+        let errorCode = 'SEND_ERROR';
         if (errorMsg.includes('No LID for user') || errorMsg.includes('static.whatsapp.net')) {
             errorMsg = `Gagal mengirim ke ${formattedPhone}: Kontak WhatsApp tidak dapat terverifikasi (LID tidak ditemukan). Pastikan nomor HP terdaftar di WhatsApp.`;
+            errorCode = 'UNREGISTERED';
         }
-        res.status(500).json({ error: errorMsg });
+        res.status(500).json({ error: errorMsg, code: errorCode });
     }
 });
 
