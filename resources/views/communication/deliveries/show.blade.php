@@ -9,7 +9,20 @@
             <h1 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">Detail Pengiriman Dokumen</h1>
             <p class="mt-2 text-sm text-slate-700 dark:text-slate-400">Riwayat lengkap pengiriman dokumen ke pasien.</p>
         </div>
-        <a href="{{ route('communication.deliveries.index') }}" class="btn-secondary mt-4 sm:mt-0">Kembali</a>
+        <div class="flex items-center gap-3 mt-4 sm:mt-0">
+            <form action="{{ route('communication.deliveries.resend', $delivery) }}" method="POST" class="inline">
+                @csrf
+                <button type="submit" 
+                    onclick="return confirmDeliveryResend('{{ addslashes($delivery->patient->name) }}', '{{ $delivery->recipient_phone ?? $delivery->recipient_email }}', '{{ $delivery->status }}', '{{ $delivery->sent_at?->format('d M Y, H:i') }}')"
+                    class="btn-primary py-2 px-4 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Kirim Ulang Dokumen
+                </button>
+            </form>
+            <a href="{{ route('communication.deliveries.index') }}" class="btn-secondary">Kembali</a>
+        </div>
     </div>
 
     <div class="space-y-6">
@@ -143,5 +156,25 @@
                 @endif
             </dl>
         </div>
+    </div>
 </div>
+
+<script>
+function confirmDeliveryResend(patientName, target, status, sentAt) {
+    let msg = "";
+    if (status === 'sent') {
+        msg = "⚠️ PERINGATAN BAHAYA (DANGER)!\n\n" +
+              "Dokumen ini SUDAH PERNAH TERKIRIM sebelumnya kepada pasien pada " + (sentAt || 'waktu sebelumnya') + ".\n\n" +
+              "Mengirim ulang berisiko membingungkan pasien (" + patientName + ") karena akan menerima dokumen ganda via WhatsApp/Email (" + target + ").\n\n" +
+              "Apakah Anda benar-benar yakin ingin TETAP MENGIRIM ULANG dokumen ini sekarang?\n\n" +
+              "(Klik OK untuk tetap melanjutkan pengiriman)";
+    } else {
+        msg = "⚠️ KONFIRMASI PENGIRIMAN ULANG (DANGER / PERINGATAN):\n\n" +
+              "Kirim ulang dokumen sekarang ke tujuan: " + target + " (Pasien: " + patientName + ")?\n\n" +
+              "Pastikan koneksi WhatsApp Gateway aktif sebelum mengirim.\n\n" +
+              "(Klik OK untuk melanjutkan pengiriman)";
+    }
+    return confirm(msg);
+}
+</script>
 @endsection

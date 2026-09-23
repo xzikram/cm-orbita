@@ -763,7 +763,70 @@ class DocumentDeliveryService
             }
         }
 
-        throw new \Exception('Fitur kirim ulang saat ini hanya didukung untuk saluran WhatsApp.');
+        if ($delivery->channel === 'email') {
+            $email = $delivery->recipient_email;
+            if (!$email) {
+                throw new \Exception('Alamat email tujuan belum diisi.');
+            }
+
+            $storagePath = $delivery->attachment_path;
+            if (!$storagePath || !Storage::disk('public')->exists($storagePath)) {
+                if ($delivery->processedDocument && Storage::disk('public')->exists($delivery->processedDocument->generated_file_path)) {
+                    $storagePath = $delivery->processedDocument->generated_file_path;
+                    $delivery->attachment_path = $storagePath;
+                } else {
+                    throw new \Exception('Berkas lampiran dokumen tidak ditemukan pada penyimpanan server.');
+                }
+            }
+
+            $absolutePath = Storage::disk('public')->path($storagePath);
+            $filename = $delivery->attachment_name ?: basename($storagePath);
+            $account = $delivery->emailAccount;
+            $template = $delivery->emailTemplate;
+            $patient = $delivery->patient;
+            $documentType = $delivery->documentType;
+
+            $subject = $delivery->subject ?: ('Dokumen Medis - ' . ($documentType?->name ?? 'CFMS'));
+            $htmlBody = $template ? $this->parseVariables($template->html_body, $patient) : '<p>Berikut terlampir dokumen medis Anda.</p>';
+
+            try {
+                $this->mailerService->setMailer($account);
+                $mailer = $this->mailerService->getMailer();
+
+                $mailer->html($htmlBody, function (\Illuminate\Mail\Message $message) use ($email, $subject, $absolutePath, $filename, $account) {
+                    $message->to($email)->subject($subject);
+                    if ($account) {
+                        $message->from($account->email_address, $account->name);
+                    }
+                    $message->attach($absolutePath, [
+                        'as' => $filename,
+                        'mime' => mime_content_type($absolutePath) ?: 'application/pdf',
+                    ]);
+                });
+
+                $delivery->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'error_message' => null,
+                ]);
+
+                $this->auditLogService->logCreated('DocumentDelivery', $delivery->id, [
+                    'action' => 'Resent Document Email',
+                    'patient' => $patient?->name,
+                    'document' => $documentType?->name,
+                ]);
+
+                return $delivery;
+            } catch (\Exception $e) {
+                $delivery->update([
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage(),
+                ]);
+                throw new \Exception('Gagal mengirim ulang email: ' . $e->getMessage());
+            }
+        }
+
+        throw new \Exception('Saluran pengiriman tidak didukung.');
     }
 }
 

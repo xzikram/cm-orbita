@@ -347,6 +347,38 @@ class DocumentDeliveryController extends Controller
         }
     }
 
+    public function resend(Request $request, DocumentDelivery $delivery)
+    {
+        abort_if($delivery->clinic_id !== Auth::user()->clinic_id, 403);
+
+        try {
+            $this->deliveryService->resendDelivery($delivery);
+
+            $target = $delivery->channel === 'whatsapp' 
+                ? ($delivery->recipient_phone ?? 'WhatsApp pasien') 
+                : ($delivery->recipient_email ?? 'Email pasien');
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Dokumen berhasil dikirim ulang ke ' . $target,
+                    'delivery' => $delivery,
+                ]);
+            }
+
+            return back()->with('success', 'Dokumen berhasil dikirim ulang ke ' . $target);
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim ulang: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->with('error', 'Gagal mengirim ulang dokumen: ' . $e->getMessage());
+        }
+    }
+
     public function whatsappStatus(Request $request)
     {
         $config = config('whatsapp.providers.selfhosted');

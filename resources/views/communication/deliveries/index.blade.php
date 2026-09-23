@@ -49,7 +49,7 @@
                     <th class="whitespace-nowrap">Tipe Dokumen</th>
                     <th class="w-32 whitespace-nowrap">Saluran</th>
                     <th class="w-32 whitespace-nowrap">Status</th>
-                    <th class="text-right whitespace-nowrap min-w-[200px]">Aksi</th>
+                    <th class="text-right whitespace-nowrap min-w-[260px]">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -100,6 +100,20 @@
                         </td>
                         <td class="text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-1.5">
+                                {{-- Opsi Kirim Ulang --}}
+                                <form action="{{ route('communication.deliveries.resend', $delivery) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" 
+                                        onclick="return confirmDeliveryResend('{{ addslashes($delivery->patient->name) }}', '{{ $delivery->recipient_phone ?? $delivery->recipient_email }}', '{{ $delivery->status }}', '{{ $delivery->sent_at?->format('d M Y, H:i') }}')"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 ring-1 ring-inset ring-sky-600/30 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-all shadow-xs" 
+                                        title="Kirim Ulang Dokumen Sekarang">
+                                        <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                        </svg>
+                                        <span>Kirim Ulang</span>
+                                    </button>
+                                </form>
+
                                 @if($delivery->status === 'failed' && ($delivery->channel ?? 'email') === 'whatsapp')
                                     <button type="button" 
                                         @click="openResendModal({{ $delivery->id }}, '{{ $delivery->recipient_phone }}', '{{ addslashes($delivery->patient->name) }}')"
@@ -229,4 +243,23 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmDeliveryResend(patientName, target, status, sentAt) {
+    let msg = "";
+    if (status === 'sent') {
+        msg = "⚠️ PERINGATAN BAHAYA (DANGER)!\n\n" +
+              "Dokumen ini SUDAH PERNAH TERKIRIM sebelumnya kepada pasien pada " + (sentAt || 'waktu sebelumnya') + ".\n\n" +
+              "Mengirim ulang berisiko membingungkan pasien (" + patientName + ") karena akan menerima dokumen ganda via WhatsApp/Email (" + target + ").\n\n" +
+              "Apakah Anda benar-benar yakin ingin TETAP MENGIRIM ULANG dokumen ini sekarang?\n\n" +
+              "(Klik OK untuk tetap melanjutkan pengiriman)";
+    } else {
+        msg = "⚠️ KONFIRMASI PENGIRIMAN ULANG (DANGER / PERINGATAN):\n\n" +
+              "Kirim ulang dokumen sekarang ke tujuan: " + target + " (Pasien: " + patientName + ")?\n\n" +
+              "Pastikan koneksi WhatsApp Gateway aktif sebelum mengirim.\n\n" +
+              "(Klik OK untuk melanjutkan pengiriman)";
+    }
+    return confirm(msg);
+}
+</script>
 @endsection
