@@ -20,6 +20,12 @@ app.use((req, res, next) => {
 // Map to store WhatsApp clients keyed by clientId
 const clients = new Map();
 
+// === RESOURCE LIMITS ===
+// Server 8GB RAM: max 3 Chromium browsers bersamaan (~300MB each)
+const MAX_CONCURRENT_CLIENTS = parseInt(process.env.MAX_WA_SESSIONS || '3', 10);
+const STAGGER_DELAY_MS = 10000; // Jeda 10 detik antar inisialisasi saat startup
+const IDLE_EVICT_MS = 15 * 60 * 1000; // Evict sesi idle > 15 menit jika melebihi limit
+
 // Helper to execute with retry if execution context was destroyed momentarily
 async function executeWithRetry(fn, retries = 3) {
     for (let attempt = 1; attempt <= retries; attempt++) {
@@ -61,14 +67,56 @@ function queueClientAction(clientData, fn) {
     return nextAction;
 }
 
-// Helper to get or create client instance
+// Count currently active (initialized) clients
+function getActiveClientCount() {
+    let count = 0;
+    for (const [, cd] of clients.entries()) {
+        if (!cd.placeholder) count++;
+    }
+    return count;
+}
+
+// Evict the least recently active client to make room for a new one
+async function evictLeastActiveClient(excludeClientId) {
+    let oldest = null;
+    let oldestTime = Infinity;
+    for (const [id, cd] of clients.entries()) {
+        if (id === excludeClientId || cd.placeholder) continue;
+        if (cd.lastActive < oldestTime) {
+            oldestTime = cd.lastActive;
+            oldest = id;
+        }
+    }
+    if (oldest) {
+        console.log(`[Manager] ⚠️ Evicting sesi paling lama tidak aktif: ${oldest} (idle ${Math.round((Date.now() - oldestTime) / 1000)}s)`);
+        const cd = clients.get(oldest);
+        clients.delete(oldest);
+        try { await cd.client.destroy(); } catch (_) {}
+    }
+}
+
+// Helper to get or create client instance (with concurrency guard)
 function getOrCreateClient(clientId) {
     if (clients.has(clientId)) {
         const clientData = clients.get(clientId);
+        // If it was a placeholder (lazy), now actually initialize it
+        if (clientData.placeholder) {
+            console.log(`[Manager] Lazy-init: client '${clientId}' diminta, memulai Chromium sekarang...`);
+            clients.delete(clientId);
+            // Evict if at limit (async, best-effort)
+            if (getActiveClientCount() >= MAX_CONCURRENT_CLIENTS) {
+                evictLeastActiveClient(clientId);
+            }
+            return createNewClient(clientId);
+        }
         clientData.lastActive = Date.now();
         return clientData;
     }
 
+    // Evict if at limit
+    if (getActiveClientCount() >= MAX_CONCURRENT_CLIENTS) {
+        evictLeastActiveClient(clientId);
+    }
     return createNewClient(clientId);
 }
 
@@ -205,7 +253,9 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Promise Rejection Terdeteksi:', reason);
 });
 
-// Load existing saved sessions on startup
+// Load existing saved sessions on startup — LAZY MODE
+// Hanya mendaftarkan sesi sebagai placeholder, TANPA membuka Chromium.
+// Chromium hanya dibuka saat sesi benar-benar diakses oleh user via API.
 function loadExistingSessions() {
     const authDir = path.join(__dirname, '.wwebjs_auth');
     if (!fs.existsSync(authDir)) {
@@ -214,11 +264,12 @@ function loadExistingSessions() {
 
     try {
         const files = fs.readdirSync(authDir);
+        const validSessions = [];
         for (const file of files) {
             if (file.startsWith('session-')) {
                 const clientId = file.substring('session-'.length);
                 
-                // Bersihkan sesi lama 'user-*' yang usang agar tidak memakan RAM server
+                // Bersihkan sesi lama 'user-*' yang usang
                 if (clientId.startsWith('user-')) {
                     console.log(`[Manager] Membersihkan folder sesi usang: ${file}`);
                     try {
@@ -227,18 +278,43 @@ function loadExistingSessions() {
                     continue;
                 }
 
+                // Bersihkan sesi 'device-test' yang tidak diperlukan
+                if (clientId === 'device-test') {
+                    console.log(`[Manager] Membersihkan folder sesi test: ${file}`);
+                    try {
+                        fs.rmSync(path.join(authDir, file), { recursive: true, force: true });
+                    } catch (e) {}
+                    continue;
+                }
+
                 if (clientId) {
-                    console.log(`[Manager] Menemukan sesi perangkat: ${clientId}. Memulai koneksi...`);
-                    getOrCreateClient(clientId);
+                    validSessions.push(clientId);
                 }
             }
+        }
+
+        console.log(`[Manager] Ditemukan ${validSessions.length} sesi tersimpan.`);
+        console.log(`[Manager] Mode: LAZY LOADING (Chromium hanya dibuka saat diakses).`);
+        console.log(`[Manager] Batas sesi aktif bersamaan: ${MAX_CONCURRENT_CLIENTS}`);
+
+        // Register sebagai placeholder (tanpa Chromium)
+        for (const clientId of validSessions) {
+            console.log(`[Manager] 📋 Mendaftarkan sesi (placeholder): ${clientId}`);
+            clients.set(clientId, {
+                placeholder: true,
+                clientId: clientId,
+                isReady: false,
+                latestQrDataUrl: null,
+                reconnecting: false,
+                lastActive: 0 // Lowest priority for eviction
+            });
         }
     } catch (err) {
         console.error('[Manager] Gagal memuat sesi tersimpan:', err.message);
     }
 }
 
-// Trigger loading saved sessions
+// Trigger loading saved sessions (lazy — NO Chromium spawned)
 loadExistingSessions();
 
 // Helper to trigger recreation from heartbeat
@@ -281,12 +357,19 @@ setInterval(async () => {
 setInterval(() => {
     const now = Date.now();
     for (const [clientId, clientData] of clients.entries()) {
+        if (clientData.placeholder) continue; // Skip placeholders
         if (!clientData.isReady && !clientData.reconnecting && (now - clientData.lastActive > 10 * 60 * 1000)) {
             console.log(`[Manager] Menghapus client tidak aktif & belum terautentikasi: ${clientId}`);
             clients.delete(clientId);
             clientData.client.destroy().catch(() => {});
         }
     }
+
+    // Log resource usage
+    const activeCount = getActiveClientCount();
+    const placeholderCount = clients.size - activeCount;
+    const memUsage = process.memoryUsage();
+    console.log(`[Monitor] Sesi aktif: ${activeCount}/${MAX_CONCURRENT_CLIENTS} | Placeholder: ${placeholderCount} | RAM Node.js: ${Math.round(memUsage.rss / 1024 / 1024)}MB`);
 }, 5 * 60 * 1000);
 
 // Endpoint: Check status of a client
@@ -304,8 +387,40 @@ app.get('/status', (req, res) => {
         return res.json({ ready: anyReady, qr: null });
     }
 
+    // Status check: if placeholder, return not-ready without spawning Chromium
+    // Chromium only spawns when user explicitly opens the WhatsApp settings page (via /init endpoint)
+    if (clients.has(clientId) && clients.get(clientId).placeholder) {
+        return res.json({ 
+            ready: false, 
+            qr: null, 
+            placeholder: true,
+            message: 'Sesi tersimpan. Klik "Hubungkan" untuk memulai koneksi.'
+        });
+    }
+
     const clientData = getOrCreateClient(clientId);
     res.json({ ready: clientData.isReady, qr: clientData.latestQrDataUrl });
+});
+
+// Endpoint: Explicitly initialize/connect a specific client (triggers Chromium)
+app.post('/init', (req, res) => {
+    const { clientId } = req.body;
+    if (!clientId) {
+        return res.status(400).json({ error: 'clientId wajib diisi.' });
+    }
+
+    console.log(`[Manager] 🚀 Init request untuk client: ${clientId}`);
+    const activeCount = getActiveClientCount();
+    console.log(`[Manager] Sesi aktif saat ini: ${activeCount}/${MAX_CONCURRENT_CLIENTS}`);
+
+    const clientData = getOrCreateClient(clientId);
+    res.json({ 
+        success: true, 
+        ready: clientData.isReady, 
+        qr: clientData.latestQrDataUrl,
+        activeSessions: getActiveClientCount(),
+        maxSessions: MAX_CONCURRENT_CLIENTS
+    });
 });
 
 // Endpoint: Reset a specific client session
