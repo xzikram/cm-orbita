@@ -153,11 +153,18 @@
                             Mendengarkan kode QR baru dari terminal...
                         </p>
 
-                        <!-- Reset Button Disconnected (if session gets stuck) -->
-                        <div class="mt-4">
-                            <button id="btn-reset-session-dc" class="inline-flex items-center gap-x-1.5 text-xs font-semibold text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition duration-150 ease-in-out">
+                        <!-- Action Buttons Disconnected -->
+                        <div class="mt-4 flex items-center gap-4">
+                            <button id="btn-reload-qr" class="inline-flex items-center gap-x-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition duration-150 ease-in-out">
                                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                Muat Ulang QR
+                            </button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button id="btn-reset-session-dc" class="inline-flex items-center gap-x-1.5 text-xs font-semibold text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition duration-150 ease-in-out">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                                 </svg>
                                 Reset Sesi yang Macet
                             </button>
@@ -184,6 +191,43 @@
         const disconnectedPanel = document.getElementById('disconnected-panel');
         const qrImage = document.getElementById('qr-image');
         const qrLoading = document.getElementById('qr-loading');
+
+        let isInitializing = false;
+        let initAttemptCount = 0;
+
+        function triggerClientInit(force = false) {
+            if (isInitializing && !force) return;
+            isInitializing = true;
+            initAttemptCount++;
+
+            const qrLoadingText = qrLoading.querySelector('span');
+            if (qrLoadingText) {
+                qrLoadingText.textContent = 'Memulai browser & menyiapkan QR Code...';
+            }
+
+            fetch(GATEWAY_URL + '/init', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clientId: clientId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.qr) {
+                    qrImage.src = data.qr;
+                    qrImage.classList.remove('hidden');
+                    qrLoading.classList.add('hidden');
+                    isInitializing = false;
+                }
+            })
+            .catch(err => {
+                console.warn('[WA Gateway] Gagal memicu inisialisasi client:', err);
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    isInitializing = false;
+                }, 12000);
+            });
+        }
  
         function checkGatewayStatus() {
             fetch(GATEWAY_URL + '/status?clientId=' + clientId)
@@ -198,6 +242,8 @@
                     connectionError.classList.add('hidden');
                     
                     if (data.ready) {
+                        isInitializing = false;
+                        initAttemptCount = 0;
                         // Connected State (own session or shared)
                         let badgeLabel = 'Terhubung';
                         let badgeExtra = '';
@@ -309,12 +355,19 @@
                         }
 
                         if (data.qr) {
+                            isInitializing = false;
+                            initAttemptCount = 0;
                             qrImage.src = data.qr;
                             qrImage.classList.remove('hidden');
                             qrLoading.classList.add('hidden');
                         } else {
                             qrImage.classList.add('hidden');
                             qrLoading.classList.remove('hidden');
+
+                            // Jika QR belum ada dan belum pernah memicu init, otomatis trigger /init ke gateway
+                            if (!isInitializing && initAttemptCount < 3) {
+                                triggerClientInit();
+                            }
                         }
                     }
                 })
@@ -416,6 +469,20 @@
         const btnResetDc = document.getElementById('btn-reset-session-dc');
         if (btnReset) btnReset.addEventListener('click', resetSession);
         if (btnResetDc) btnResetDc.addEventListener('click', resetSession);
+
+        const btnReloadQr = document.getElementById('btn-reload-qr');
+        if (btnReloadQr) {
+            btnReloadQr.addEventListener('click', function() {
+                const originalHtml = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<svg class="animate-spin h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memuat QR...';
+                triggerClientInit(true);
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = originalHtml;
+                }, 5000);
+            });
+        }
 
         const btnTestSend = document.getElementById('btn-test-send');
         if (btnTestSend) btnTestSend.addEventListener('click', sendTestMessage);

@@ -492,7 +492,14 @@ app.get('/status', (req, res) => {
         });
     }
 
-    // 3. Nothing available at all
+    // 3. Optional auto-init via query param
+    if (req.query.autoInit === 'true' || req.query.autoInit === '1') {
+        console.log(`[Manager] autoInit diminta via /status untuk client: ${clientId}`);
+        const cd = getOrCreateClient(clientId);
+        return res.json({ ready: cd.isReady, qr: cd.latestQrDataUrl });
+    }
+
+    // 4. Nothing available at all
     return res.json({ ready: false, qr: null, message: 'Belum ada sesi WhatsApp yang terhubung.' });
 });
 
